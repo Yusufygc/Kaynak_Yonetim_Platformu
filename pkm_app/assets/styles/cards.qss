@@ -1,0 +1,58 @@
+/* cards.qss */
+
+#ResourceCard {
+    background-color: {{bg_secondary}};
+    border-radius: 8px;
+}
+
+#ResourceCard:hover {
+    background-color: {{border_color}};
+    margin-top: -2px;
+}
+
+#CardTitle {
+    color: {{text_primary}};
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#CardDate {
+    color: {{text_secondary}};
+    font-size: 10px;
+}
+
+/* --- URL Rich Card --- */
+
+#UrlRichCard {
+    background-color: {{bg_secondary}};
+    border-radius: 8px;
+}
+
+#UrlRichCard:hover {
+    background-color: {{border_color}};
+    margin-top: -3px;
+}
+
+#UrlCardTitle {
+    color: {{text_primary}};
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#UrlCardDesc {
+    color: {{text_secondary}};
+    font-size: 11px;
+}
+
+#UrlOpenButton {
+    background: transparent;
+    color: {{accent_color}};
+    border: 1px solid {{accent_color}};
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-size: 11px;
+}
+
+#UrlOpenButton:hover {
+    background-color: {{accent_color}}22;
+}

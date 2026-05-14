@@ -1,0 +1,51 @@
+/* detail.qss */
+
+#DetailView {
+    background-color: {{bg_secondary}};
+    border-left: 1px solid {{border_color}};
+}
+
+#DetailTitle {
+    color: {{text_primary}};
+    font-size: 15px;
+    font-weight: 700;
+}
+
+#DetailUrlButton {
+    color: {{accent_color}};
+    font-size: 11px;
+    text-decoration: underline;
+    text-align: left;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+#DetailCloseButton {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+}
+
+#DetailCloseButton:hover {
+    background-color: {{border_color}};
+}
+
+#StatusCombo,
+#ProgressSpin {
+    background-color: {{bg_primary}};
+    color: {{text_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+#NotesEdit {
+    background-color: {{bg_primary}};
+    color: {{text_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 6px;
+    padding: 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+}
