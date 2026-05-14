@@ -58,3 +58,7 @@ logs/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# === Dökümantasyon (commit disi) ===
+docs/
+*.md
