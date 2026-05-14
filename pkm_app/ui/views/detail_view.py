@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -19,13 +20,19 @@ from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from models.resource import Resource, ResourceStatus
+from ui.components.resource_form import ResourceForm
+
+_PAGE_EMPTY = 0
+_PAGE_VIEW = 1
+_PAGE_FORM = 2
 
 
 class DetailView(QFrame):
-    """Sag panel: secilen kaynağin detay ve düzenleme ekrani."""
+    """Sag panel: bos / kaynak detay / yeni kaynak formu."""
 
-    progress_updated = Signal(int, float)   # (resource_id, progress)
-    status_updated = Signal(int, str)       # (resource_id, status_value)
+    progress_updated = Signal(int, float)
+    status_updated = Signal(int, str)
+    form_submitted = Signal(dict)   # ResourceForm → MainWindow
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -33,23 +40,41 @@ class DetailView(QFrame):
         self.setMinimumWidth(280)
         self._resource_id: int | None = None
 
-        self._build_ui()
-        self._connect_signals()
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self._stack = QStackedWidget()
+        root.addWidget(self._stack)
 
+        self._stack.addWidget(self._build_empty_page())   # 0
+        self._stack.addWidget(self._build_view_page())    # 1
+        self._form_page = ResourceForm()
+        self._stack.addWidget(self._form_page)             # 2
+
+        self._connect_signals()
         event_bus.resource_selected.connect(self._on_resource_selected)
         event_bus.theme_changed.connect(self._on_theme_changed)
         self.hide()
 
     # ------------------------------------------------------------------ #
-    # Kurulum
+    # Sayfa insa
     # ------------------------------------------------------------------ #
 
-    def _build_ui(self) -> None:
-        root = QVBoxLayout(self)
+    def _build_empty_page(self) -> QWidget:
+        w = QWidget()
+        layout = QVBoxLayout(w)
+        lbl = QLabel("Bir kaynak seçin\nveya 'Yeni Ekle'ye basın.")
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl.setWordWrap(True)
+        lbl.setObjectName("EmptyDetailLabel")
+        layout.addWidget(lbl)
+        return w
+
+    def _build_view_page(self) -> QWidget:
+        w = QWidget()
+        root = QVBoxLayout(w)
         root.setContentsMargins(12, 12, 12, 12)
         root.setSpacing(10)
 
-        # --- Header ---
         header = QHBoxLayout()
         self._title_label = QLabel("—")
         self._title_label.setObjectName("DetailTitle")
@@ -64,7 +89,6 @@ class DetailView(QFrame):
         header.addWidget(self._close_btn)
         root.addLayout(header)
 
-        # --- URL ---
         self._url_btn = QPushButton()
         self._url_btn.setObjectName("DetailUrlButton")
         self._url_btn.setFlat(True)
@@ -72,7 +96,6 @@ class DetailView(QFrame):
         self._url_btn.hide()
         root.addWidget(self._url_btn)
 
-        # --- Durum ---
         status_row = QHBoxLayout()
         status_row.addWidget(QLabel(AppStrings.STATUS_LABEL))
         self._status_combo = QComboBox()
@@ -82,7 +105,6 @@ class DetailView(QFrame):
         status_row.addWidget(self._status_combo, stretch=1)
         root.addLayout(status_row)
 
-        # --- İlerleme ---
         progress_row = QHBoxLayout()
         progress_row.addWidget(QLabel(AppStrings.PROGRESS_LABEL))
         self._progress_spin = QDoubleSpinBox()
@@ -93,20 +115,27 @@ class DetailView(QFrame):
         progress_row.addWidget(self._progress_spin, stretch=1)
         root.addLayout(progress_row)
 
-        # --- Notlar (Markdown) ---
         self._notes_edit = QTextEdit()
         self._notes_edit.setObjectName("NotesEdit")
         self._notes_edit.setPlaceholderText("Notlar (Markdown destekli)...")
         root.addWidget(self._notes_edit, stretch=1)
 
+        return w
+
+    # ------------------------------------------------------------------ #
+    # Sinyal baglantilari
+    # ------------------------------------------------------------------ #
+
     def _connect_signals(self) -> None:
-        self._close_btn.clicked.connect(self.hide)
+        self._close_btn.clicked.connect(self.clear)
         self._url_btn.clicked.connect(self._open_url)
         self._status_combo.currentIndexChanged.connect(self._on_status_changed)
         self._progress_spin.valueChanged.connect(self._on_progress_changed)
+        self._form_page.submitted.connect(self.form_submitted)
+        self._form_page.cancelled.connect(self.clear)
 
     # ------------------------------------------------------------------ #
-    # Veri yükleme
+    # Public API
     # ------------------------------------------------------------------ #
 
     def load_resource(self, resource: Resource) -> None:
@@ -131,15 +160,25 @@ class DetailView(QFrame):
         self._progress_spin.blockSignals(False)
 
         self._notes_edit.setPlainText(resource.content or "")
+        self._stack.setCurrentIndex(_PAGE_VIEW)
         self.show()
+
+    def show_form(self, categories: list) -> None:
+        self._form_page.load_categories(categories)
+        self._form_page.reset()
+        self._stack.setCurrentIndex(_PAGE_FORM)
+        self.show()
+
+    def clear(self) -> None:
+        self._resource_id = None
+        self._stack.setCurrentIndex(_PAGE_EMPTY)
+        self.hide()
 
     # ------------------------------------------------------------------ #
     # Slot'lar
     # ------------------------------------------------------------------ #
 
     def _on_resource_selected(self, _resource_id: int) -> None:
-        # Controller bu sinyali alıp load_resource çağırır;
-        # burada sadece panelin görünür olduğundan emin ol.
         self.show()
 
     def _open_url(self) -> None:

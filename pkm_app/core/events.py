@@ -30,5 +30,8 @@ class _EventBus(QObject):
     # --- Tema sinyali ---
     theme_changed = Signal(dict)          # aktif tema renk sözlügü
 
+    # --- Hata sinyali ---
+    error_occurred = Signal(str)          # kullanici arayüzüne iletilecek hata mesaji
+
 
 event_bus = _EventBus()

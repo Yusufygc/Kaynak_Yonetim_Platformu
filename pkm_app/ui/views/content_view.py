@@ -15,6 +15,7 @@ from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.flow_layout import FlowLayout
+from ui.components.inline_banner import InlineBanner
 from ui.components.search_bar import SearchBar
 
 
@@ -52,6 +53,10 @@ class ContentView(QFrame):
         top_bar.addWidget(self._add_btn)
 
         root.addLayout(top_bar)
+
+        # --- Inline banner ---
+        self._banner = InlineBanner()
+        root.addWidget(self._banner)
 
         # --- Kart alanı ---
         self._scroll = QScrollArea()
@@ -95,6 +100,16 @@ class ContentView(QFrame):
     def show_empty_state(self, visible: bool) -> None:
         self._scroll.setVisible(not visible)
         self._empty_state.setVisible(visible)
+
+    # ------------------------------------------------------------------ #
+    # Banner API
+    # ------------------------------------------------------------------ #
+
+    def show_error_banner(self, message: str) -> None:
+        self._banner.show_error(message)
+
+    def show_info_banner(self, message: str) -> None:
+        self._banner.show_info(message)
 
     # ------------------------------------------------------------------ #
     # Slot'lar

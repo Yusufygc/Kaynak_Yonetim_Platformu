@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 
 from core.constants.strings import AppStrings
 from core.events import event_bus
+from core.logger import log
 from ui.components.sidebar import Sidebar
 from ui.views.content_view import ContentView
 from ui.views.detail_view import DetailView
@@ -22,6 +23,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(AppStrings.APP_TITLE)
         self.resize(1280, 800)
         self.setMinimumSize(900, 600)
+        self._current_filter = "all"
 
         self._build_ui()
         self._connect_events()
@@ -39,11 +41,9 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        # Sidebar sabit genislikte — splitter disinda
         self._sidebar = Sidebar()
         root_layout.addWidget(self._sidebar)
 
-        # Orta ve sag panel splitter ile ayrilir
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
         self._splitter.setObjectName("MainSplitter")
         self._splitter.setChildrenCollapsible(False)
@@ -64,10 +64,11 @@ class MainWindow(QMainWindow):
         event_bus.resource_added.connect(self._refresh_current)
         event_bus.resource_updated.connect(self._refresh_current)
         event_bus.resource_deleted.connect(self._refresh_current)
+        event_bus.error_occurred.connect(self._on_error)
+
         self._content_view.add_requested.connect(self._on_add_requested)
-        self._detail_view.progress_updated.connect(
-            self._controller.update_progress
-        )
+        self._detail_view.progress_updated.connect(self._controller.update_progress)
+        self._detail_view.form_submitted.connect(self._on_form_submitted)
 
     # ------------------------------------------------------------------ #
     # Yükleme
@@ -126,8 +127,19 @@ class MainWindow(QMainWindow):
             self._detail_view.load_resource(resource)
 
     def _on_add_requested(self) -> None:
-        # TODO: Adim 8'de dialog eklenecek
-        pass
+        categories = self._controller.load_categories()
+        self._detail_view.show_form(categories)
+
+    def _on_form_submitted(self, data: dict) -> None:
+        resource = self._controller.add_resource(data)
+        if resource is not None:
+            self._detail_view.clear()
+            self._load_resources(self._current_filter)
+            self._content_view.show_info_banner(f"'{resource.title}' eklendi.")
+            log.info("Form ile kaynak eklendi: id=%d", resource.id)
+
+    def _on_error(self, message: str) -> None:
+        self._content_view.show_error_banner(message)
 
     def _refresh_current(self, _resource_id: int = 0) -> None:
-        self._load_resources(getattr(self, "_current_filter", "all"))
+        self._load_resources(self._current_filter)

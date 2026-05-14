@@ -58,6 +58,7 @@ class MainController:
             return resource
         except Exception as exc:
             log.error("Kaynak eklenemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
             return None
 
     def update_progress(self, resource_id: int, progress: float) -> None:

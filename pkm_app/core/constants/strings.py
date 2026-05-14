@@ -28,9 +28,25 @@ class AppStrings:
     # Empty state
     EMPTY_STATE_MSG = "Burada henüz bir şey yok. Yeni Ekle'ye basarak ilk kaynağınızı oluşturun."
 
+    # Form — Yeni Kaynak
+    FORM_HEADER = "Yeni Kaynak Ekle"
+    FORM_FIELD_TITLE = "Baslik *"
+    FORM_FIELD_URL = "URL (opsiyonel)"
+    FORM_FIELD_CATEGORY = "Kategori"
+    FORM_FIELD_PRIORITY = "Oncelik"
+    FORM_FIELD_TAGS = "Etiketler (virgülle ayir)"
+    FORM_FIELD_CONTENT = "Not / Aciklama"
+    FORM_PRIORITY_LOW = "3 — Dusuk"
+    FORM_PRIORITY_MEDIUM = "2 — Orta"
+    FORM_PRIORITY_HIGH = "1 — Yüksek"
+    FORM_CATEGORY_NONE = "— Seciniz —"
+    SAVE = "Kaydet"
+    CANCEL = "Iptal"
+
     # Errors
     ERR_INVALID_URL = "Gecersiz URL formati."
     ERR_CATEGORY_NOT_FOUND = "Kategori bulunamadi."
     ERR_RESOURCE_NOT_FOUND = "Kaynak bulunamadi."
     ERR_DUPLICATE = "Bu isimde bir kayit zaten mevcut."
     ERR_PROGRESS_RANGE = "Ilerleme degeri 0-100 arasinda olmalidir."
+    ERR_TITLE_REQUIRED = "Baslik bos birakilamaz."
