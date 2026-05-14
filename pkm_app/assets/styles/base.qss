@@ -1,0 +1,94 @@
+/* base.qss — Genel uygulama stilleri
+   Renkler {{anahtar}} sablonuyla ThemeManager tarafindan dinamik enjekte edilir.
+*/
+
+QWidget {
+    background-color: {{bg_primary}};
+    color: {{text_primary}};
+    font-family: "Inter";
+    font-size: 13px;
+}
+
+QFrame {
+    border: none;
+}
+
+QScrollArea {
+    border: none;
+    background-color: {{bg_primary}};
+}
+
+QScrollBar:vertical {
+    background: {{bg_secondary}};
+    width: 8px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: {{border_color}};
+    border-radius: 4px;
+    min-height: 20px;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QLineEdit {
+    background-color: {{bg_secondary}};
+    color: {{text_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+QLineEdit:focus {
+    border: 1px solid {{accent_color}};
+}
+
+QPushButton {
+    background-color: {{accent_color}};
+    color: {{bg_primary}};
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-weight: 600;
+}
+
+QPushButton:hover {
+    background-color: {{text_secondary}};
+}
+
+QPushButton:pressed {
+    background-color: {{border_color}};
+}
+
+QLabel {
+    background: transparent;
+    color: {{text_primary}};
+}
+
+QComboBox {
+    background-color: {{bg_secondary}};
+    color: {{text_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QTextEdit {
+    background-color: {{bg_secondary}};
+    color: {{text_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QSplitter::handle {
+    background: {{border_color}};
+}
