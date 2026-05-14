@@ -85,6 +85,67 @@ class MainController:
     def load_tags(self) -> list:
         return self._tag_svc.get_all()
 
+    def create_category(self, name: str, color_hex: str, icon: str = "") -> object:
+        try:
+            cat = self._category_svc.create_category(name, color_hex, icon)
+            event_bus.category_added.emit(cat.id)
+            return cat
+        except Exception as exc:
+            log.error("Kategori eklenemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+            return None
+
+    def update_category(self, category_id: int, name: str,
+                        color_hex: str, icon: str = "") -> object:
+        try:
+            cat = self._category_svc.update_category(category_id, name, color_hex, icon)
+            event_bus.category_updated.emit(cat.id)
+            return cat
+        except Exception as exc:
+            log.error("Kategori guncellenemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+            return None
+
+    def delete_category(self, category_id: int) -> bool:
+        try:
+            self._category_svc.delete_category(category_id)
+            event_bus.category_deleted.emit(category_id)
+            return True
+        except Exception as exc:
+            log.error("Kategori silinemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+            return False
+
+    def create_tag(self, name: str) -> object:
+        try:
+            tag = self._tag_svc.create_tag(name)
+            event_bus.tag_added.emit(tag.id)
+            return tag
+        except Exception as exc:
+            log.error("Etiket eklenemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+            return None
+
+    def update_tag(self, tag_id: int, new_name: str) -> object:
+        try:
+            tag = self._tag_svc.update_tag(tag_id, new_name)
+            event_bus.tag_updated.emit(tag.id)
+            return tag
+        except Exception as exc:
+            log.error("Etiket guncellenemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+            return None
+
+    def delete_tag(self, tag_id: int) -> bool:
+        try:
+            self._tag_svc.delete_tag(tag_id)
+            event_bus.tag_deleted.emit(tag_id)
+            return True
+        except Exception as exc:
+            log.error("Etiket silinemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+            return False
+
     # ------------------------------------------------------------------ #
     # Slot'lar
     # ------------------------------------------------------------------ #

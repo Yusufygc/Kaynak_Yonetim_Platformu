@@ -1,0 +1,138 @@
+/* settings.qss */
+
+#SettingsView {
+    background-color: {{bg_primary}};
+}
+
+#SettingsHeader {
+    color: {{text_primary}};
+    font-size: 18px;
+    font-weight: 700;
+}
+
+#SettingsTabs {
+    background-color: {{bg_primary}};
+    color: {{text_primary}};
+}
+
+#SettingsTabs QTabBar::tab {
+    background-color: {{bg_secondary}};
+    color: {{text_secondary}};
+    padding: 6px 20px;
+    border: 1px solid {{border_color}};
+    border-bottom: none;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+#SettingsTabs QTabBar::tab:selected {
+    background-color: {{bg_primary}};
+    color: {{text_primary}};
+    font-weight: 600;
+}
+
+#SettingsTabs QTabBar::tab:hover {
+    color: {{text_primary}};
+}
+
+#SettingsScrollArea {
+    background-color: {{bg_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 6px;
+}
+
+/* --- Satir bilesenleri --- */
+
+#CategoryRow,
+#TagRow {
+    background-color: {{bg_secondary}};
+    border: 1px solid {{border_color}};
+    border-radius: 6px;
+}
+
+#CategoryRow:hover,
+#TagRow:hover {
+    border-color: {{accent_color}};
+}
+
+#CategoryRowLabel,
+#TagRowLabel {
+    color: {{text_primary}};
+    font-size: 13px;
+}
+
+#ColorPreviewBox {
+    border-radius: 3px;
+}
+
+#RowEditField {
+    background-color: {{bg_primary}};
+    color: {{text_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 5px;
+    padding: 3px 6px;
+    font-size: 12px;
+}
+
+#RowEditField:focus {
+    border-color: {{accent_color}};
+}
+
+#RowEditButton {
+    background-color: transparent;
+    color: {{accent_color}};
+    border: 1px solid {{accent_color}};
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-size: 11px;
+}
+
+#RowEditButton:hover {
+    background-color: {{accent_color}}22;
+}
+
+#RowSaveButton {
+    background-color: {{accent_color}};
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+#RowSaveButton:hover {
+    background-color: {{accent_color}}cc;
+}
+
+#RowCancelButton {
+    background-color: transparent;
+    color: {{text_secondary}};
+    border: 1px solid {{border_color}};
+    border-radius: 5px;
+    padding: 3px 6px;
+    font-size: 11px;
+}
+
+#RowDeleteButton {
+    background-color: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-size: 11px;
+}
+
+#RowDeleteButton:hover {
+    background-color: #ff6b6b22;
+}
+
+#RowDeleteConfirmButton {
+    background-color: #ff4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}

@@ -20,6 +20,7 @@ class QtAwesomeIcons:
     PINNED = "fa5s.thumbtack"
     DELETE = "fa5s.trash-alt"
     EDIT = "fa5s.pen"
+    SETTINGS = "fa5s.cog"
 
 
 class CustomIcons:

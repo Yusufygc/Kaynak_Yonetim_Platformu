@@ -14,6 +14,19 @@ class AppStrings:
     SEARCH_PLACEHOLDER = "Ara..."
     ADD_NEW = "Yeni Ekle"
 
+    # Ayarlar sayfasi
+    SETTINGS = "Ayarlar"
+    SETTINGS_CATEGORIES_TAB = "Kategoriler"
+    SETTINGS_TAGS_TAB = "Etiketler"
+    CATEGORY_NAME = "Kategori adi"
+    CATEGORY_COLOR = "Renk (#RRGGBB)"
+    CATEGORY_ICON = "Ikon (opsiyonel)"
+    TAG_NAME = "Etiket adi"
+    ADD = "Ekle"
+    EDIT = "Duzenle"
+    DELETE = "Sil"
+    CONFIRM_DELETE = "Silmek icin tekrar tikla"
+
     # Detail panel
     OPEN_IN_BROWSER = "Tarayicide Ac"
     CLOSE_PANEL = "Kapat"
@@ -50,3 +63,4 @@ class AppStrings:
     ERR_DUPLICATE = "Bu isimde bir kayit zaten mevcut."
     ERR_PROGRESS_RANGE = "Ilerleme degeri 0-100 arasinda olmalidir."
     ERR_TITLE_REQUIRED = "Baslik bos birakilamaz."
+    ERR_HEX_FORMAT = "Renk formati #RRGGBB olmali (ornek: #3B82F6)."

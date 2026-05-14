@@ -2,6 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QMainWindow,
     QSplitter,
+    QStackedWidget,
     QWidget,
     QHBoxLayout,
 )
@@ -12,10 +13,14 @@ from core.logger import log
 from ui.components.sidebar import Sidebar
 from ui.views.content_view import ContentView
 from ui.views.detail_view import DetailView
+from ui.views.settings_view import SettingsView
+
+_PAGE_CONTENT = 0
+_PAGE_SETTINGS = 1
 
 
 class MainWindow(QMainWindow):
-    """Three-Pane ana pencere: Sidebar | ContentView | DetailView."""
+    """Three-Pane ana pencere: Sidebar | main_stack (ContentView/SettingsView) | DetailView."""
 
     def __init__(self, controller) -> None:
         super().__init__()
@@ -48,10 +53,16 @@ class MainWindow(QMainWindow):
         self._splitter.setObjectName("MainSplitter")
         self._splitter.setChildrenCollapsible(False)
 
+        # Ana icerik stack (ContentView | SettingsView)
+        self._main_stack = QStackedWidget()
         self._content_view = ContentView()
+        self._settings_view = SettingsView(self._controller)
+        self._main_stack.addWidget(self._content_view)   # 0
+        self._main_stack.addWidget(self._settings_view)  # 1
+
         self._detail_view = DetailView()
 
-        self._splitter.addWidget(self._content_view)
+        self._splitter.addWidget(self._main_stack)
         self._splitter.addWidget(self._detail_view)
         self._splitter.setStretchFactor(0, 3)
         self._splitter.setStretchFactor(1, 1)
@@ -65,6 +76,12 @@ class MainWindow(QMainWindow):
         event_bus.resource_updated.connect(self._refresh_current)
         event_bus.resource_deleted.connect(self._refresh_current)
         event_bus.error_occurred.connect(self._on_error)
+        event_bus.category_added.connect(self._reload_sidebar)
+        event_bus.category_updated.connect(self._reload_sidebar)
+        event_bus.category_deleted.connect(self._reload_sidebar)
+        event_bus.tag_added.connect(self._reload_sidebar)
+        event_bus.tag_updated.connect(self._reload_sidebar)
+        event_bus.tag_deleted.connect(self._reload_sidebar)
 
         self._content_view.add_requested.connect(self._on_add_requested)
         self._detail_view.progress_updated.connect(self._controller.update_progress)
@@ -98,11 +115,24 @@ class MainWindow(QMainWindow):
             card = ResourceCard(resource)
             self._content_view.add_card(card)
 
+    def _reload_sidebar(self, _id: int = 0) -> None:
+        self._sidebar.load_categories(self._controller.load_categories())
+        self._sidebar.load_tags(self._controller.load_tags())
+
     # ------------------------------------------------------------------ #
     # Slot'lar
     # ------------------------------------------------------------------ #
 
     def _on_filter_changed(self, filter_key: str) -> None:
+        if filter_key == "settings":
+            self._main_stack.setCurrentIndex(_PAGE_SETTINGS)
+            self._detail_view.clear()
+            self._settings_view.load_all()
+            return
+
+        # Diger filtreler icin ContentView'e don
+        self._main_stack.setCurrentIndex(_PAGE_CONTENT)
+
         if filter_key.startswith("search:"):
             keyword = filter_key[len("search:"):]
             resources = (
@@ -142,4 +172,5 @@ class MainWindow(QMainWindow):
         self._content_view.show_error_banner(message)
 
     def _refresh_current(self, _resource_id: int = 0) -> None:
-        self._load_resources(self._current_filter)
+        if self._main_stack.currentIndex() == _PAGE_CONTENT:
+            self._load_resources(self._current_filter)

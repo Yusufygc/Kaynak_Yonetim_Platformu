@@ -20,6 +20,7 @@ class _EventBus(QObject):
 
     # --- Etiket sinyalleri ---
     tag_added = Signal(int)
+    tag_updated = Signal(int)
     tag_deleted = Signal(int)
 
     # --- UI etkilesim sinyalleri ---
