@@ -1,0 +1,1 @@
+# Uygulamanin giris noktasi
