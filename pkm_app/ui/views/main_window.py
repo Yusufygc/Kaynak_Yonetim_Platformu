@@ -76,12 +76,6 @@ class MainWindow(QMainWindow):
         event_bus.resource_updated.connect(self._refresh_current)
         event_bus.resource_deleted.connect(self._refresh_current)
         event_bus.error_occurred.connect(self._on_error)
-        event_bus.category_added.connect(self._reload_sidebar)
-        event_bus.category_updated.connect(self._reload_sidebar)
-        event_bus.category_deleted.connect(self._reload_sidebar)
-        event_bus.tag_added.connect(self._reload_sidebar)
-        event_bus.tag_updated.connect(self._reload_sidebar)
-        event_bus.tag_deleted.connect(self._reload_sidebar)
 
         self._content_view.add_requested.connect(self._on_add_requested)
         self._detail_view.progress_updated.connect(self._controller.update_progress)
@@ -92,10 +86,6 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------ #
 
     def _initial_load(self) -> None:
-        categories = self._controller.load_categories()
-        tags = self._controller.load_tags()
-        self._sidebar.load_categories(categories)
-        self._sidebar.load_tags(tags)
         self._load_resources("all")
 
     def _load_resources(self, filter_key: str) -> None:
@@ -114,10 +104,6 @@ class MainWindow(QMainWindow):
         for resource in resources:
             card = ResourceCard(resource)
             self._content_view.add_card(card)
-
-    def _reload_sidebar(self, _id: int = 0) -> None:
-        self._sidebar.load_categories(self._controller.load_categories())
-        self._sidebar.load_tags(self._controller.load_tags())
 
     # ------------------------------------------------------------------ #
     # Slot'lar
