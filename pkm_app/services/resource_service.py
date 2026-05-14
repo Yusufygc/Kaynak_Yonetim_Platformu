@@ -106,18 +106,23 @@ class ResourceService:
             extra_metadata=data.get("extra_metadata"),
         )
 
-        tag_names: list[str] = data.get("tag_names", [])
-        for tag_name in tag_names:
-            normalized = tag_name.lower().strip()
-            tag = self._tag_repo.get_by_name(normalized)
-            if tag is None:
-                from models.tag import Tag
-                tag = Tag(name=normalized)
-                self._tag_repo.create(tag)
-            resource.tags.append(tag)
-
+        # Once resource'u session'a ekle, sonra etiketleri bagla.
+        # Bu sayede flush sirasinda relationship tam olarak cozumlenir.
         try:
-            self._resource_repo.create(resource)
+            self._session.add(resource)
+            self._session.flush()  # ID atanir, iliski tablosu hazir olur
+
+            tag_names: list[str] = data.get("tag_names", [])
+            from models.tag import Tag as TagModel
+            for tag_name in tag_names:
+                normalized = tag_name.lower().strip()
+                tag = self._tag_repo.get_by_name(normalized)
+                if tag is None:
+                    tag = TagModel(name=normalized)
+                    self._session.add(tag)
+                    self._session.flush()
+                resource.tags.append(tag)
+
             self._session.commit()
             log.info("Yeni kaynak eklendi: id=%d title=%r", resource.id, resource.title)
         except Exception:
