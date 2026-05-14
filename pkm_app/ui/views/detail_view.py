@@ -28,17 +28,21 @@ _PAGE_FORM = 2
 
 
 class DetailView(QFrame):
-    """Sag panel: bos / kaynak detay / yeni kaynak formu."""
+    """Sag panel: bos / kaynak detay / kaynak formu."""
 
     progress_updated = Signal(int, float)
-    status_updated = Signal(int, str)
-    form_submitted = Signal(dict)   # ResourceForm → MainWindow
+    status_updated = Signal(int, object)   # (resource_id, ResourceStatus enum)
+    content_updated = Signal(int, str)     # (resource_id, notes text)
+    form_submitted = Signal(dict)          # ResourceForm → MainWindow
+    edit_requested = Signal(int)           # resource_id
+    delete_requested = Signal(int)         # resource_id
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("DetailView")
         self.setMinimumWidth(280)
         self._resource_id: int | None = None
+        self._delete_confirm: bool = False
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -51,7 +55,6 @@ class DetailView(QFrame):
         self._stack.addWidget(self._form_page)             # 2
 
         self._connect_signals()
-        event_bus.resource_selected.connect(self._on_resource_selected)
         event_bus.theme_changed.connect(self._on_theme_changed)
         self.hide()
 
@@ -120,6 +123,24 @@ class DetailView(QFrame):
         self._notes_edit.setPlaceholderText("Notlar (Markdown destekli)...")
         root.addWidget(self._notes_edit, stretch=1)
 
+        self._save_notes_btn = QPushButton(AppStrings.SAVE_NOTES)
+        self._save_notes_btn.setObjectName("SaveNotesButton")
+        root.addWidget(self._save_notes_btn)
+
+        action_row = QHBoxLayout()
+        self._edit_btn = QPushButton(AppStrings.EDIT_RESOURCE)
+        self._edit_btn.setObjectName("EditResourceButton")
+        self._delete_btn = QPushButton(AppStrings.DELETE_RESOURCE)
+        self._delete_btn.setObjectName("DeleteResourceButton")
+        action_row.addWidget(self._edit_btn)
+        action_row.addWidget(self._delete_btn)
+        root.addLayout(action_row)
+
+        self._delete_confirm_btn = QPushButton(AppStrings.CONFIRM_DELETE_RESOURCE)
+        self._delete_confirm_btn.setObjectName("DeleteResourceConfirmButton")
+        self._delete_confirm_btn.hide()
+        root.addWidget(self._delete_confirm_btn)
+
         return w
 
     # ------------------------------------------------------------------ #
@@ -131,6 +152,10 @@ class DetailView(QFrame):
         self._url_btn.clicked.connect(self._open_url)
         self._status_combo.currentIndexChanged.connect(self._on_status_changed)
         self._progress_spin.valueChanged.connect(self._on_progress_changed)
+        self._save_notes_btn.clicked.connect(self._on_save_notes)
+        self._edit_btn.clicked.connect(self._on_edit_clicked)
+        self._delete_btn.clicked.connect(self._on_delete_first_click)
+        self._delete_confirm_btn.clicked.connect(self._on_delete_confirmed)
         self._form_page.submitted.connect(self.form_submitted)
         self._form_page.cancelled.connect(self.clear)
 
@@ -140,6 +165,13 @@ class DetailView(QFrame):
 
     def load_resource(self, resource: Resource) -> None:
         self._resource_id = resource.id
+        self._delete_confirm = False
+        self._delete_confirm_btn.hide()
+        self._delete_btn.setText(AppStrings.DELETE_RESOURCE)
+        self._delete_btn.setObjectName("DeleteResourceButton")
+        self._delete_btn.style().unpolish(self._delete_btn)
+        self._delete_btn.style().polish(self._delete_btn)
+
         self._title_label.setText(resource.title)
 
         if resource.url:
@@ -164,22 +196,27 @@ class DetailView(QFrame):
         self.show()
 
     def show_form(self, categories: list) -> None:
+        """Yeni kaynak ekleme formu."""
+        self._form_page.reset_for_new()
         self._form_page.load_categories(categories)
-        self._form_page.reset()
+        self._stack.setCurrentIndex(_PAGE_FORM)
+        self.show()
+
+    def show_form_edit(self, resource: Resource, categories: list) -> None:
+        """Mevcut kaynak duzenleme formu."""
+        self._form_page.load_resource(resource, categories)
         self._stack.setCurrentIndex(_PAGE_FORM)
         self.show()
 
     def clear(self) -> None:
         self._resource_id = None
+        self._delete_confirm = False
         self._stack.setCurrentIndex(_PAGE_EMPTY)
         self.hide()
 
     # ------------------------------------------------------------------ #
     # Slot'lar
     # ------------------------------------------------------------------ #
-
-    def _on_resource_selected(self, _resource_id: int) -> None:
-        self.show()
 
     def _open_url(self) -> None:
         url = self._url_btn.property("url")
@@ -189,11 +226,29 @@ class DetailView(QFrame):
     def _on_status_changed(self) -> None:
         if self._resource_id is not None:
             status: ResourceStatus = self._status_combo.currentData()
-            self.status_updated.emit(self._resource_id, status.value)
+            self.status_updated.emit(self._resource_id, status)
 
     def _on_progress_changed(self, value: float) -> None:
         if self._resource_id is not None:
             self.progress_updated.emit(self._resource_id, value)
+
+    def _on_save_notes(self) -> None:
+        if self._resource_id is not None:
+            text = self._notes_edit.toPlainText()
+            self.content_updated.emit(self._resource_id, text)
+
+    def _on_edit_clicked(self) -> None:
+        if self._resource_id is not None:
+            self.edit_requested.emit(self._resource_id)
+
+    def _on_delete_first_click(self) -> None:
+        self._delete_confirm = True
+        self._delete_confirm_btn.show()
+        self._delete_btn.hide()
+
+    def _on_delete_confirmed(self) -> None:
+        if self._resource_id is not None:
+            self.delete_requested.emit(self._resource_id)
 
     def _on_theme_changed(self, theme_data: dict) -> None:
         color = theme_data.get("icon_color", "#ffffff")

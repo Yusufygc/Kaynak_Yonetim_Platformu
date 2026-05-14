@@ -103,6 +103,58 @@
     background-color: {{border_color}};
 }
 
+/* --- Kaynak isleme butonlari --- */
+
+#SaveNotesButton {
+    background-color: transparent;
+    color: {{accent_color}};
+    border: 1px solid {{accent_color}};
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+}
+
+#SaveNotesButton:hover {
+    background-color: {{accent_color}}22;
+}
+
+#EditResourceButton {
+    background-color: {{accent_color}};
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#EditResourceButton:hover {
+    background-color: {{accent_color}}cc;
+}
+
+#DeleteResourceButton {
+    background-color: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+#DeleteResourceButton:hover {
+    background-color: #ff6b6b22;
+}
+
+#DeleteResourceConfirmButton {
+    background-color: #ff4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 /* --- Inline Banner --- */
 
 #InlineBanner {

@@ -21,6 +21,7 @@ from models.base import Base
 
 
 class ResourceStatus(enum.Enum):
+    INBOX = "INBOX"
     PLANNED = "PLANNED"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"

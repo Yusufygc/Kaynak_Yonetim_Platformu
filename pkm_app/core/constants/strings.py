@@ -56,6 +56,18 @@ class AppStrings:
     SAVE = "Kaydet"
     CANCEL = "Iptal"
 
+    # Form — Duzenle
+    FORM_HEADER_EDIT = "Kaynagi Duzenle"
+    FORM_FIELD_STATUS = "Durum"
+    FORM_STATUS_INBOX = "Gelen Kutusu"
+    FORM_STATUS_PLANNED = "Planlandı"
+    FORM_STATUS_IN_PROGRESS = "Devam Ediyor"
+    FORM_STATUS_COMPLETED = "Tamamlandı"
+    EDIT_RESOURCE = "Duzenle"
+    DELETE_RESOURCE = "Sil"
+    CONFIRM_DELETE_RESOURCE = "Silmek icin tekrar tikla"
+    SAVE_NOTES = "Notu Kaydet"
+
     # Errors
     ERR_INVALID_URL = "Gecersiz URL formati."
     ERR_CATEGORY_NOT_FOUND = "Kategori bulunamadi."

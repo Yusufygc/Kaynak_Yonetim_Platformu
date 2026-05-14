@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from core.events import event_bus
 from core.logger import log
-from models.resource import Resource
+from models.resource import Resource, ResourceStatus
 from services.category_service import CategoryService
 from services.resource_service import ResourceService
 from services.tag_service import TagService
@@ -32,16 +32,15 @@ class MainController:
     def load_resources_by_filter(self, filter_key: str) -> list[Resource]:
         if filter_key == "all":
             return self._resource_svc.get_all()
+        if filter_key == "inbox":
+            return self._resource_svc.get_by_status(ResourceStatus.INBOX)
+        if filter_key == "planned":
+            return self._resource_svc.get_by_status(ResourceStatus.PLANNED)
         if filter_key == "url_showcase":
             return self._resource_svc.get_urls_only()
         if filter_key.startswith("category:"):
             cat_id = int(filter_key.split(":")[1])
             return self._resource_svc.get_by_category(cat_id)
-        if filter_key.startswith("tag:"):
-            tag_id = int(filter_key.split(":")[1])
-            return self._resource_svc.search_by_tag([tag_id]) if hasattr(
-                self._resource_svc, "search_by_tag"
-            ) else []
         return self._resource_svc.get_all()
 
     def get_resource(self, resource_id: int) -> Resource | None:
@@ -58,6 +57,21 @@ class MainController:
             return resource
         except Exception as exc:
             log.error("Kaynak eklenemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+            return None
+
+    def search_resources(self, keyword: str) -> list[Resource]:
+        if not keyword.strip():
+            return self._resource_svc.get_all()
+        return self._resource_svc.search(keyword)
+
+    def update_resource(self, resource_id: int, data: dict) -> Resource | None:
+        try:
+            resource = self._resource_svc.update_resource(resource_id, data)
+            event_bus.resource_updated.emit(resource_id)
+            return resource
+        except Exception as exc:
+            log.error("[%s] Kaynak guncellenemedi: %s", exc.__class__.__name__, exc)
             event_bus.error_occurred.emit(str(exc))
             return None
 
@@ -151,10 +165,4 @@ class MainController:
     # ------------------------------------------------------------------ #
 
     def _on_search(self, keyword: str) -> None:
-        if not keyword.strip():
-            results = self._resource_svc.get_all()
-        else:
-            results = self._resource_svc.search(keyword)
-        # UI katmani bu sinyali dinleyerek kartlari yeniler
         event_bus.sidebar_filter_changed.emit(f"search:{keyword}")
-        log.debug("Arama: %r — %d sonuc", keyword, len(results))

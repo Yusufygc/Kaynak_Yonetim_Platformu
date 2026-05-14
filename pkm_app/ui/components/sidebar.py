@@ -36,8 +36,6 @@ class Sidebar(QFrame):
         self._build_ui()
         self._connect_signals()
 
-        event_bus.theme_changed.connect(self._on_theme_changed)
-
     # ------------------------------------------------------------------ #
     # Kurulum
     # ------------------------------------------------------------------ #
@@ -72,6 +70,7 @@ class Sidebar(QFrame):
     def _connect_signals(self) -> None:
         self._nav_list.currentItemChanged.connect(self._on_nav_changed)
         self._theme_btn.clicked.connect(self._on_theme_toggle)
+        event_bus.theme_changed.connect(self._on_theme_changed)
 
     # ------------------------------------------------------------------ #
     # Slot'lar

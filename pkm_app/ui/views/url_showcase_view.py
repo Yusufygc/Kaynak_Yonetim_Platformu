@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
 )
 
 from core.constants.strings import AppStrings
-from core.events import event_bus
 from ui.components.flow_layout import FlowLayout
 
 
@@ -19,7 +18,6 @@ class UrlShowcaseView(QFrame):
         super().__init__(parent)
         self.setObjectName("UrlShowcaseView")
         self._build_ui()
-        event_bus.sidebar_filter_changed.connect(self._on_filter_changed)
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -64,7 +62,3 @@ class UrlShowcaseView(QFrame):
         for resource in url_resources:
             self._flow.addWidget(UrlRichCard(resource))
 
-    def _on_filter_changed(self, filter_key: str) -> None:
-        # Sadece url_showcase filtresi secildiginde bu view guncellenir;
-        # guncelleme MainWindow tarafından tetiklenir.
-        pass

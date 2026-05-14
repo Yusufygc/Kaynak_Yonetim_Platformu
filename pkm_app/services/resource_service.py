@@ -15,19 +15,16 @@ from repositories.resource_repo import ResourceRepository
 from repositories.tag_repo import TagRepository
 
 _URL_RE = re.compile(
-    r"^(https?://)?"
+    r"^https?://"
     r"([\w\-]+\.)+[\w\-]+"
     r"(:\d+)?"
-    r"(/[\w\-./?%&=]*)?"
+    r"(/[\w\-./?%&=#@!$&'()*+,;:]*)?"
     r"$",
     re.IGNORECASE,
 )
 
 
 def _validate_url(url: str) -> None:
-    parsed = urlparse(url)
-    if not parsed.scheme or parsed.scheme not in ("http", "https"):
-        raise InvalidURLError(f"Gecersiz URL formati: {url!r}")
     if not _URL_RE.match(url):
         raise InvalidURLError(f"Gecersiz URL formati: {url!r}")
 

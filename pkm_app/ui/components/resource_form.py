@@ -16,7 +16,7 @@ from models.resource import ResourceStatus
 
 
 class ResourceForm(QFrame):
-    """Yeni kaynak ekleme formu — sag panelde goruntulenir, QDialog kullanilmaz."""
+    """Kaynak ekleme / duzenleme formu — sag panelde goruntulenir, QDialog kullanilmaz."""
 
     submitted = Signal(dict)
     cancelled = Signal()
@@ -25,6 +25,7 @@ class ResourceForm(QFrame):
         super().__init__(parent)
         self.setObjectName("ResourceForm")
         self._categories: list = []
+        self._resource_id: int | None = None
         self._build_ui()
 
     # ------------------------------------------------------------------ #
@@ -36,9 +37,9 @@ class ResourceForm(QFrame):
         root.setContentsMargins(12, 12, 12, 12)
         root.setSpacing(8)
 
-        header = QLabel(AppStrings.FORM_HEADER)
-        header.setObjectName("FormHeader")
-        root.addWidget(header)
+        self._header = QLabel(AppStrings.FORM_HEADER)
+        self._header.setObjectName("FormHeader")
+        root.addWidget(self._header)
 
         self._title_input = self._field(root, AppStrings.FORM_FIELD_TITLE)
         self._url_input = self._field(root, AppStrings.FORM_FIELD_URL)
@@ -48,11 +49,20 @@ class ResourceForm(QFrame):
         self._category_combo.setObjectName("FormCombo")
         root.addWidget(self._category_combo)
 
+        root.addWidget(QLabel(AppStrings.FORM_FIELD_STATUS))
+        self._status_combo = QComboBox()
+        self._status_combo.setObjectName("FormCombo")
+        self._status_combo.addItem(AppStrings.FORM_STATUS_INBOX, ResourceStatus.INBOX)
+        self._status_combo.addItem(AppStrings.FORM_STATUS_PLANNED, ResourceStatus.PLANNED)
+        self._status_combo.addItem(AppStrings.FORM_STATUS_IN_PROGRESS, ResourceStatus.IN_PROGRESS)
+        self._status_combo.addItem(AppStrings.FORM_STATUS_COMPLETED, ResourceStatus.COMPLETED)
+        root.addWidget(self._status_combo)
+
         root.addWidget(QLabel(AppStrings.FORM_FIELD_PRIORITY))
         self._priority_combo = QComboBox()
         self._priority_combo.setObjectName("FormCombo")
-        self._priority_combo.addItem(AppStrings.FORM_PRIORITY_MEDIUM, 2)
         self._priority_combo.addItem(AppStrings.FORM_PRIORITY_HIGH, 1)
+        self._priority_combo.addItem(AppStrings.FORM_PRIORITY_MEDIUM, 2)
         self._priority_combo.addItem(AppStrings.FORM_PRIORITY_LOW, 3)
         root.addWidget(self._priority_combo)
 
@@ -97,13 +107,37 @@ class ResourceForm(QFrame):
         for cat in categories:
             self._category_combo.addItem(cat.name, cat.id)
 
-    def reset(self) -> None:
+    def load_resource(self, resource, categories: list) -> None:
+        """Edit modu: alanlari mevcut degerlerle doldur."""
+        self.load_categories(categories)
+        self._resource_id = resource.id
+        self._header.setText(AppStrings.FORM_HEADER_EDIT)
+        self._title_input.setText(resource.title)
+        self._url_input.setText(resource.url or "")
+
+        cat_idx = self._category_combo.findData(resource.category_id)
+        self._category_combo.setCurrentIndex(cat_idx if cat_idx >= 0 else 0)
+
+        status_idx = self._status_combo.findData(resource.status)
+        self._status_combo.setCurrentIndex(status_idx if status_idx >= 0 else 0)
+
+        pri_idx = self._priority_combo.findData(resource.priority)
+        self._priority_combo.setCurrentIndex(pri_idx if pri_idx >= 0 else 1)
+
+        tag_names = ", ".join(t.name for t in resource.tags) if resource.tags else ""
+        self._tags_input.setText(tag_names)
+        self._content_input.setPlainText(resource.content or "")
+
+    def reset_for_new(self) -> None:
+        self._resource_id = None
+        self._header.setText(AppStrings.FORM_HEADER)
         self._title_input.clear()
         self._url_input.clear()
         self._tags_input.clear()
         self._content_input.clear()
-        self._priority_combo.setCurrentIndex(0)
+        self._priority_combo.setCurrentIndex(1)  # Orta
         self._category_combo.setCurrentIndex(0)
+        self._status_combo.setCurrentIndex(0)   # Gelen Kutusu
 
     # ------------------------------------------------------------------ #
     # Slot
@@ -118,17 +152,22 @@ class ResourceForm(QFrame):
 
         url = self._url_input.text().strip() or None
         category_id = self._category_combo.currentData()
+        status = self._status_combo.currentData()
         priority = self._priority_combo.currentData()
         raw_tags = self._tags_input.text()
         tag_names = [t.strip() for t in raw_tags.split(",") if t.strip()]
         content = self._content_input.toPlainText().strip() or None
 
-        self.submitted.emit({
+        data: dict = {
             "title": title,
             "url": url,
             "category_id": category_id,
+            "status": status,
             "priority": priority,
-            "status": ResourceStatus.PLANNED,
             "tag_names": tag_names,
             "content": content,
-        })
+        }
+        if self._resource_id is not None:
+            data["resource_id"] = self._resource_id
+
+        self.submitted.emit(data)
