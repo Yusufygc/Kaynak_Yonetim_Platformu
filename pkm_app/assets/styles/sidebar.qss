@@ -1,15 +1,15 @@
 /* sidebar.qss */
 
 #Sidebar {
-    background-color: {{bg_secondary}};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {{surface_elevated}}, stop:1 {{bg_secondary}});
     border-right: 1px solid {{border_color}};
 }
 
 #SidebarTitle {
     color: {{text_primary}};
-    font-size: 13px;
-    font-weight: 700;
-    padding: 4px 0;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 6px 0;
 }
 
 #SidebarSectionLabel {
@@ -33,33 +33,35 @@
 #SidebarCategoryList::item,
 #SidebarTagList::item {
     color: {{text_primary}};
-    border-radius: 6px;
-    padding: 6px 10px;
+    border-radius: 8px;
+    padding: 8px 10px;
 }
 
 #SidebarNavList::item:selected,
 #SidebarCategoryList::item:selected,
 #SidebarTagList::item:selected {
-    background-color: {{accent_color}}33;
+    background-color: {{nav_selected_bg}};
     color: {{accent_color}};
+    font-weight: 700;
 }
 
 #SidebarNavList::item:hover,
 #SidebarCategoryList::item:hover,
 #SidebarTagList::item:hover {
-    background-color: {{border_color}};
+    background-color: {{surface_hover}};
 }
 
 #ThemeToggleButton {
     background: transparent;
     color: {{text_secondary}};
     border: 1px solid {{border_color}};
-    border-radius: 6px;
-    padding: 6px;
+    border-radius: 8px;
+    padding: 8px;
     text-align: left;
 }
 
 #ThemeToggleButton:hover {
-    background-color: {{border_color}};
+    background-color: {{surface_hover}};
     color: {{text_primary}};
+    border-color: {{focus_ring}};
 }
