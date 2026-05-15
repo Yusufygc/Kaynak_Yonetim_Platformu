@@ -1,5 +1,4 @@
 from PySide6.QtCore import Signal
-from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -9,42 +8,48 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.constants.colors import Colors
 from core.constants.strings import AppStrings
+from core.events import event_bus
+from ui.components.painted import ColorSwatch
+from ui.theme_utils import resolve_theme_color
 
 
 class CategoryRow(QFrame):
     """Tek kategori satiri: isim + renk onizleme + duzenle/sil kontrolleri."""
 
-    edit_requested = Signal(int, str, str, str)   # (id, name, color_hex, icon)
-    delete_requested = Signal(int)                 # id
+    edit_requested = Signal(int, str, str, str)
+    delete_requested = Signal(int)
 
     def __init__(self, category, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("CategoryRow")
         self._cat_id: int = category.id
         self._cat_icon: str = category.icon or ""
+        self._cat_color: str = category.color_hex or ""
+        self._theme_data: dict | None = None
         self._confirm_pending: bool = False
 
         self._build_ui(category)
+        event_bus.theme_changed.connect(self._on_theme_changed)
 
     def _build_ui(self, category) -> None:
         layout = QHBoxLayout(self)
         layout.setContentsMargins(6, 4, 6, 4)
         layout.setSpacing(8)
 
-        # Renk kutusu
-        self._color_box = QLabel()
+        self._color_box = ColorSwatch(
+            self._cat_color,
+            resolve_theme_color(self._theme_data, Colors.CATEGORY_FALLBACK),
+            resolve_theme_color(self._theme_data, Colors.SWATCH_BORDER),
+        )
         self._color_box.setObjectName("ColorPreviewBox")
-        self._color_box.setFixedSize(18, 18)
-        self._set_color(category.color_hex or "#888888")
         layout.addWidget(self._color_box)
 
-        # Isim — normal gosterim
         self._name_label = QLabel(category.name)
         self._name_label.setObjectName("CategoryRowLabel")
         layout.addWidget(self._name_label, stretch=1)
 
-        # Inline duzenle alanlari (gizli)
         self._name_edit = QLineEdit(category.name)
         self._name_edit.setObjectName("RowEditField")
         self._name_edit.hide()
@@ -57,7 +62,6 @@ class CategoryRow(QFrame):
         self._color_edit.hide()
         layout.addWidget(self._color_edit)
 
-        # Butonlar
         self._edit_btn = QPushButton(AppStrings.EDIT)
         self._edit_btn.setObjectName("RowEditButton")
         self._edit_btn.setFixedWidth(70)
@@ -85,18 +89,6 @@ class CategoryRow(QFrame):
         self._cancel_edit_btn.clicked.connect(self._exit_edit_mode)
         self._delete_btn.clicked.connect(self._on_delete_click)
 
-    # ------------------------------------------------------------------ #
-
-    def _set_color(self, hex_str: str) -> None:
-        try:
-            color = QColor(hex_str)
-            bg = hex_str if color.isValid() else "#888888"
-        except Exception:
-            bg = "#888888"
-        self._color_box.setStyleSheet(
-            f"background-color: {bg}; border-radius: 3px; border: 1px solid #555;"
-        )
-
     def _enter_edit_mode(self) -> None:
         self._name_label.hide()
         self._name_edit.show()
@@ -121,9 +113,10 @@ class CategoryRow(QFrame):
         color = self._color_edit.text().strip()
         if not name or not color:
             return
+        self._cat_color = color
         self.edit_requested.emit(self._cat_id, name, color, self._cat_icon)
         self._name_label.setText(name)
-        self._set_color(color)
+        self._refresh_swatch()
         self._exit_edit_mode()
 
     def _on_delete_click(self) -> None:
@@ -137,8 +130,21 @@ class CategoryRow(QFrame):
             self.delete_requested.emit(self._cat_id)
 
     def refresh(self, category) -> None:
+        self._cat_color = category.color_hex or ""
         self._name_label.setText(category.name)
         self._name_edit.setText(category.name)
         self._color_edit.setText(category.color_hex or "")
-        self._set_color(category.color_hex or "#888888")
         self._cat_icon = category.icon or ""
+        self._refresh_swatch()
+
+    def _on_theme_changed(self, theme_data: dict) -> None:
+        self._theme_data = theme_data
+        self._refresh_swatch()
+
+    def _refresh_swatch(self) -> None:
+        self._color_box.set_color(
+            self._cat_color,
+            resolve_theme_color(self._theme_data, Colors.CATEGORY_FALLBACK),
+            resolve_theme_color(self._theme_data, Colors.SWATCH_BORDER),
+        )
+
