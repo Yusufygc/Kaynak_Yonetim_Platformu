@@ -11,9 +11,11 @@ from PySide6.QtWidgets import (
 
 import qtawesome as qta
 
+from core.constants.colors import Colors
 from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
+from ui.theme_utils import resolve_theme_color
 
 
 _STATIC_ITEMS = [
@@ -33,6 +35,7 @@ class Sidebar(QFrame):
         self.setFixedWidth(220)
 
         self._theme: dict = {}
+        self._nav_icons: list[str] = []
         self._build_ui()
         self._connect_signals()
 
@@ -55,9 +58,12 @@ class Sidebar(QFrame):
         self._nav_list = QListWidget()
         self._nav_list.setObjectName("SidebarNavList")
         self._nav_list.setSpacing(2)
+        icon_color = resolve_theme_color(None, Colors.ICON)
         for label, icon_name, key in _STATIC_ITEMS:
             item = QListWidgetItem(label)
             item.setData(Qt.ItemDataRole.UserRole, key)
+            item.setIcon(qta.icon(icon_name, color=icon_color))
+            self._nav_icons.append(icon_name)
             self._nav_list.addItem(item)
         layout.addWidget(self._nav_list)
 
@@ -78,6 +84,7 @@ class Sidebar(QFrame):
 
     def _on_nav_changed(self, current, _previous) -> None:
         if current:
+            self._refresh_nav_icons()
             event_bus.sidebar_filter_changed.emit(
                 current.data(Qt.ItemDataRole.UserRole)
             )
@@ -88,6 +95,20 @@ class Sidebar(QFrame):
 
     def _on_theme_changed(self, theme_data: dict) -> None:
         self._theme = theme_data
-        icon_color = theme_data.get("icon_color", "#ffffff")
+        icon_color = resolve_theme_color(theme_data, Colors.ICON)
+        selected_color = resolve_theme_color(theme_data, Colors.ACCENT)
+        self._refresh_nav_icons(icon_color, selected_color)
         moon_sun = "fa5s.sun" if theme_data.get("name") == "dark" else "fa5s.moon"
         self._theme_btn.setIcon(qta.icon(moon_sun, color=icon_color))
+
+    def _refresh_nav_icons(
+        self,
+        icon_color: str | None = None,
+        selected_color: str | None = None,
+    ) -> None:
+        icon_color = icon_color or resolve_theme_color(self._theme, Colors.ICON)
+        selected_color = selected_color or resolve_theme_color(self._theme, Colors.ACCENT)
+        for index in range(self._nav_list.count()):
+            item = self._nav_list.item(index)
+            color = selected_color if item.isSelected() else icon_color
+            item.setIcon(qta.icon(self._nav_icons[index], color=color))
