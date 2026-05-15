@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 
 from core.config import settings
@@ -9,6 +9,15 @@ engine = create_engine(
     connect_args={"check_same_thread": False},  # SQLite icin gerekli
     echo=(settings.APP_ENV == "development"),
 )
+
+
+@event.listens_for(engine, "connect")
+def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
+    if engine.url.get_backend_name() != "sqlite":
+        return
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
