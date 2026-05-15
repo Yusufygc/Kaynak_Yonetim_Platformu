@@ -1,7 +1,7 @@
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from models.base import Base
+from .base import Base
 
 
 class Category(Base):
@@ -13,7 +13,7 @@ class Category(Base):
     icon: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     resources: Mapped[list["Resource"]] = relationship(  # type: ignore[name-defined]
-        "Resource", back_populates="category", cascade="all, delete-orphan"
+        "Resource", back_populates="category"
     )
 
     def __repr__(self) -> str:
