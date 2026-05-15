@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.constants.strings import AppStrings
-from models.resource import ResourceStatus
+from models import ResourceStatus
 
 
 class ResourceForm(QFrame):
