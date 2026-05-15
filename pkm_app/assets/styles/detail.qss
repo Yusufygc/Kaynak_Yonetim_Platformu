@@ -1,14 +1,14 @@
 /* detail.qss */
 
 #DetailView {
-    background-color: {{bg_secondary}};
+    background-color: {{surface_elevated}};
     border-left: 1px solid {{border_color}};
 }
 
 #DetailTitle {
     color: {{text_primary}};
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 800;
 }
 
 #DetailUrlButton {
@@ -28,25 +28,25 @@
 }
 
 #DetailCloseButton:hover {
-    background-color: {{border_color}};
+    background-color: {{surface_hover}};
 }
 
 #StatusCombo,
 #ProgressSpin {
-    background-color: {{bg_primary}};
+    background-color: {{bg_secondary}};
     color: {{text_primary}};
     border: 1px solid {{border_color}};
-    border-radius: 6px;
-    padding: 4px 8px;
+    border-radius: 8px;
+    padding: 5px 9px;
 }
 
 #NotesEdit {
-    background-color: {{bg_primary}};
+    background-color: {{bg_secondary}};
     color: {{text_primary}};
     border: 1px solid {{border_color}};
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 8px;
-    font-family: "JetBrains Mono", monospace;
+    font-family: "JetBrains Mono", "Cascadia Code", "Consolas";
     font-size: 12px;
 }
 
@@ -65,42 +65,42 @@
 #FormField,
 #FormCombo,
 #FormTextEdit {
-    background-color: {{bg_primary}};
+    background-color: {{bg_secondary}};
     color: {{text_primary}};
     border: 1px solid {{border_color}};
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 5px 8px;
     font-size: 12px;
 }
 
 #FormField:focus,
 #FormTextEdit:focus {
-    border-color: {{accent_color}};
+    border-color: {{focus_ring}};
 }
 
 #SaveButton {
-    background-color: {{accent_color}};
-    color: #ffffff;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {{accent_gradient_start}}, stop:1 {{accent_gradient_end}});
+    color: {{on_accent}};
     border: none;
-    border-radius: 6px;
-    padding: 6px 16px;
+    border-radius: 8px;
+    padding: 7px 16px;
     font-weight: 600;
 }
 
 #SaveButton:hover {
-    background-color: {{accent_color}}cc;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {{accent_secondary}}, stop:1 {{accent_gradient_end}});
 }
 
 #CancelButton {
     background-color: transparent;
     color: {{text_secondary}};
     border: 1px solid {{border_color}};
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 6px 12px;
 }
 
 #CancelButton:hover {
-    background-color: {{border_color}};
+    background-color: {{surface_hover}};
 }
 
 /* --- Kaynak isleme butonlari --- */
@@ -109,48 +109,48 @@
     background-color: transparent;
     color: {{accent_color}};
     border: 1px solid {{accent_color}};
-    border-radius: 6px;
-    padding: 4px 12px;
+    border-radius: 8px;
+    padding: 5px 12px;
     font-size: 11px;
 }
 
 #SaveNotesButton:hover {
-    background-color: {{accent_color}}22;
+    background-color: {{nav_selected_bg}};
 }
 
 #EditResourceButton {
-    background-color: {{accent_color}};
-    color: #ffffff;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {{accent_gradient_start}}, stop:1 {{accent_gradient_end}});
+    color: {{on_accent}};
     border: none;
-    border-radius: 6px;
-    padding: 5px 12px;
+    border-radius: 8px;
+    padding: 6px 12px;
     font-size: 12px;
     font-weight: 600;
 }
 
 #EditResourceButton:hover {
-    background-color: {{accent_color}}cc;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {{accent_secondary}}, stop:1 {{accent_gradient_end}});
 }
 
 #DeleteResourceButton {
     background-color: transparent;
-    color: #ff6b6b;
-    border: 1px solid #ff6b6b;
-    border-radius: 6px;
-    padding: 5px 12px;
+    color: {{danger_color}};
+    border: 1px solid {{danger_color}};
+    border-radius: 8px;
+    padding: 6px 12px;
     font-size: 12px;
 }
 
 #DeleteResourceButton:hover {
-    background-color: #ff6b6b22;
+    background-color: {{danger_bg}};
 }
 
 #DeleteResourceConfirmButton {
-    background-color: #ff4444;
-    color: #ffffff;
+    background-color: {{danger_hover}};
+    color: {{on_accent}};
     border: none;
-    border-radius: 6px;
-    padding: 5px 12px;
+    border-radius: 8px;
+    padding: 6px 12px;
     font-size: 12px;
     font-weight: 600;
 }
@@ -165,11 +165,11 @@
 }
 
 #InlineBanner[severity="error"] {
-    background-color: #ff4444;
-    color: #ffffff;
+    background-color: {{danger_hover}};
+    color: {{on_accent}};
 }
 
 #InlineBanner[severity="info"] {
     background-color: {{accent_color}};
-    color: #ffffff;
+    color: {{on_accent}};
 }
