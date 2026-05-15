@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from core.events import event_bus
 from core.logger import log
-from models.resource import Resource, ResourceStatus
+from models import Resource, ResourceStatus
 from services.category_service import CategoryService
 from services.resource_service import ResourceService
 from services.tag_service import TagService
