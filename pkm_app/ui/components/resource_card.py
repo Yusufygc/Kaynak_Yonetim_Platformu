@@ -1,6 +1,5 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QFrame,
     QHBoxLayout,
     QLabel,
     QSizePolicy,
@@ -10,41 +9,48 @@ from PySide6.QtWidgets import (
 
 import qtawesome as qta
 
+from core.constants.colors import Colors
 from core.constants.icons import QtAwesomeIcons
+from core.constants.status import status_label
 from core.events import event_bus
-from models.resource import Resource, ResourceStatus
+from models import Resource, ResourceStatus
+from ui.components.painted import AccentFrame, ColorBadge
+from ui.theme_utils import resolve_theme_color, with_alpha
 from utils.date_utils import format_date
 
 _CARD_WIDTH = 240
 _CARD_HEIGHT = 160
 
-_STATUS_COLORS = {
-    ResourceStatus.PLANNED: "#82AAFF",
-    ResourceStatus.IN_PROGRESS: "#FFCB6B",
-    ResourceStatus.COMPLETED: "#C3E88D",
-}
-
-_STATUS_LABELS = {
-    ResourceStatus.PLANNED: "Planlandı",
-    ResourceStatus.IN_PROGRESS: "Devam Ediyor",
-    ResourceStatus.COMPLETED: "Tamamlandı",
+_STATUS_COLOR_KEYS = {
+    ResourceStatus.PLANNED: Colors.STATUS_PLANNED,
+    ResourceStatus.IN_PROGRESS: Colors.STATUS_IN_PROGRESS,
+    ResourceStatus.COMPLETED: Colors.STATUS_COMPLETED,
 }
 
 
-class ResourceCard(QFrame):
+class ResourceCard(AccentFrame):
     """Standart metin/not kaynaklari icin sabit boyutlu kart."""
 
     def __init__(self, resource: Resource, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._resource = resource
         self._resource_id = resource.id
+        self._theme_data: dict | None = None
+        self._cat_icon_label: QLabel | None = None
+        self._status_badge: ColorBadge | None = None
+        self._description_label: QLabel | None = None
+        self._tag_badges: list[ColorBadge] = []
+        self._cat_icon_name = (
+            resource.category.icon
+            if resource.category and resource.category.icon
+            else QtAwesomeIcons.CATEGORY
+        )
+
         self.setObjectName("ResourceCard")
         self.setFixedSize(_CARD_WIDTH, _CARD_HEIGHT)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-
-        accent = _STATUS_COLORS.get(resource.status, "#82AAFF")
-        self.setStyleSheet(
-            f"ResourceCard {{ border-left: 4px solid {accent}; border-radius: 8px; }}"
-        )
+        self.set_accent_color(self._status_color(resource.status))
+        self.set_shadow_color(resolve_theme_color(self._theme_data, Colors.SHADOW))
 
         self._build_ui(resource)
         event_bus.theme_changed.connect(self._on_theme_changed)
@@ -54,39 +60,27 @@ class ResourceCard(QFrame):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(4)
 
-        # --- Üst satır: kategori ikonu + durum rozeti ---
         top_row = QHBoxLayout()
         top_row.setSpacing(6)
 
-        cat_icon_label = QLabel()
-        cat_icon_label.setObjectName("CardCatIcon")
-        icon_name = (
-            resource.category.icon
-            if resource.category and resource.category.icon
-            else QtAwesomeIcons.CATEGORY
-        )
-        try:
-            cat_icon_label.setPixmap(
-                qta.icon(icon_name, color="#A0A0B0").pixmap(16, 16)
-            )
-        except Exception:
-            cat_icon_label.setPixmap(
-                qta.icon(QtAwesomeIcons.CATEGORY, color="#A0A0B0").pixmap(16, 16)
-            )
-        top_row.addWidget(cat_icon_label)
+        self._cat_icon_label = QLabel()
+        self._cat_icon_label.setObjectName("CardCatIcon")
+        self._update_category_icon()
+        top_row.addWidget(self._cat_icon_label)
         top_row.addStretch()
 
-        status_label = QLabel(_STATUS_LABELS.get(resource.status, ""))
-        status_label.setObjectName("CardStatusBadge")
-        status_color = _STATUS_COLORS.get(resource.status, "#82AAFF")
-        status_label.setStyleSheet(
-            f"background: {status_color}22; color: {status_color};"
-            "border-radius: 4px; padding: 1px 6px; font-size: 10px;"
-        )
-        top_row.addWidget(status_label)
+        status_text = status_label(resource.status)
+        if status_text:
+            status_color = self._status_color(resource.status)
+            self._status_badge = ColorBadge(
+                status_text,
+                status_color,
+                with_alpha(status_color, "22"),
+                vertical_padding=1,
+            )
+            top_row.addWidget(self._status_badge)
         layout.addLayout(top_row)
 
-        # --- Başlık ---
         title = QLabel(resource.title)
         title.setObjectName("CardTitle")
         title.setWordWrap(True)
@@ -94,9 +88,20 @@ class ResourceCard(QFrame):
         title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addWidget(title)
 
+        description = self._description_text(resource)
+        if description:
+            self._description_label = QLabel(description)
+            self._description_label.setObjectName("CardDescription")
+            self._description_label.setWordWrap(True)
+            self._description_label.setMaximumHeight(34)
+            self._description_label.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Fixed,
+            )
+            layout.addWidget(self._description_label)
+
         layout.addStretch()
 
-        # --- Alt satır: tarih + etiketler ---
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(4)
 
@@ -106,12 +111,14 @@ class ResourceCard(QFrame):
         bottom_row.addStretch()
 
         for tag in resource.tags[:3]:
-            badge = QLabel(f"#{tag.name}")
-            badge.setObjectName("CardTagBadge")
-            badge.setStyleSheet(
-                "background: #3B3B54; color: #A0A0B0;"
-                "border-radius: 4px; padding: 1px 5px; font-size: 10px;"
+            badge = ColorBadge(
+                f"#{tag.name}",
+                resolve_theme_color(self._theme_data, Colors.TEXT_SECONDARY),
+                resolve_theme_color(self._theme_data, Colors.TAG_BADGE_BG),
+                horizontal_padding=5,
+                vertical_padding=1,
             )
+            self._tag_badges.append(badge)
             bottom_row.addWidget(badge)
 
         layout.addLayout(bottom_row)
@@ -121,6 +128,41 @@ class ResourceCard(QFrame):
         super().mousePressEvent(event)
 
     def _on_theme_changed(self, theme_data: dict) -> None:
-        # Etiket rozet renkleri temadan bagımsız (durum rengi sabit);
-        # arka plan ve kenarlıklar QSS üzerinden güncellenir.
-        pass
+        self._theme_data = theme_data
+        self.set_accent_color(self._status_color(self._resource.status))
+        self.set_shadow_color(resolve_theme_color(self._theme_data, Colors.SHADOW))
+        if self._status_badge is not None:
+            status_color = self._status_color(self._resource.status)
+            self._status_badge.set_colors(status_color, with_alpha(status_color, "22"))
+        for badge in self._tag_badges:
+            badge.set_colors(
+                resolve_theme_color(self._theme_data, Colors.TEXT_SECONDARY),
+                resolve_theme_color(self._theme_data, Colors.TAG_BADGE_BG),
+            )
+        self._update_category_icon()
+        self.update()
+
+    def _status_color(self, status: ResourceStatus) -> str:
+        key = _STATUS_COLOR_KEYS.get(status, Colors.ACCENT)
+        return resolve_theme_color(self._theme_data, key)
+
+    def _update_category_icon(self) -> None:
+        if self._cat_icon_label is None:
+            return
+        icon_color = resolve_theme_color(self._theme_data, Colors.TEXT_SECONDARY)
+        try:
+            icon = qta.icon(self._cat_icon_name, color=icon_color)
+        except Exception:
+            icon = qta.icon(QtAwesomeIcons.CATEGORY, color=icon_color)
+        self._cat_icon_label.setPixmap(icon.pixmap(16, 16))
+
+    @staticmethod
+    def _description_text(resource: Resource) -> str:
+        content = (resource.content or "").strip()
+        if content:
+            return " ".join(content.split())
+        if resource.extra_metadata:
+            return " ".join(
+                (resource.extra_metadata.get("og_description") or "").strip().split()
+            )
+        return ""
