@@ -4,7 +4,7 @@ Kaynak Yönetim Platformu, dijital varlıklarınızı (makaleler, videolar, web 
 
 ---
 
-## 🎯 Projenin Amacı
+##  Projenin Amacı
 
 Bilgi çağında maruz kaldığımız yoğun içerik akışı, "sonra okurum/izlerim" diyerek kaydettiğimiz bağlantıların dijital bir yığında kaybolmasına neden olmaktadır. Bu projenin temel amacı;
 - İnternetten topladığınız kaynakları yapılandırılmış bir şekilde saklamak,
@@ -12,7 +12,7 @@ Bilgi çağında maruz kaldığımız yoğun içerik akışı, "sonra okurum/izl
 - Görsel olarak zengin kart yapıları ile ilham verici bir çalışma ortamı sunmak,
 - Clean Code ve SOLID prensiplerine sadık kalarak, genişletilebilir ve sağlam bir yazılım altyapısı sağlamaktır.
 
-## ✨ Temel Özellikler
+##  Temel Özellikler
 
 - **Zengin URL Vitrini (URL Showcase):** Kayıtlı bağlantıları sıradan bir liste yerine asenkron olarak yüklenen web site görselleri (thumbnail) ile birlikte zengin kartlar (Rich Card) halinde sunar.
 - **Kategorizasyon ve Etiketleme:** Kaynaklarınızı sınırsız hiyerarşik kategori ve renk kodlu etiketlerle (Tag) organize edebilirsiniz.
@@ -26,7 +26,7 @@ Bilgi çağında maruz kaldığımız yoğun içerik akışı, "sonra okurum/izl
 
 ---
 
-## 🛠️ Teknoloji Yığını (Tech Stack)
+##  Teknoloji Yığını (Tech Stack)
 
 Uygulama, modern masaüstü teknolojileri ve standartları kullanılarak Python üzerinde inşa edilmiştir:
 
@@ -38,7 +38,7 @@ Uygulama, modern masaüstü teknolojileri ve standartları kullanılarak Python 
 
 ---
 
-## 🏗️ Teknik Detaylar ve Mimari
+##  Teknik Detaylar ve Mimari
 
 Bu proje, büyük ölçekli ve kurumsal uygulamalara temel oluşturabilecek şekilde **Clean Architecture** prensipleri benimsenerek geliştirilmiştir.
 
@@ -60,7 +60,7 @@ Standart Qt widget'larının yetersiz kaldığı noktalarda `pkm_app/ui/componen
 
 ---
 
-## 🚀 Geliştirme Ortamı Kurulumu
+##  Geliştirme Ortamı Kurulumu
 
 Uygulamayı kendi ortamınızda çalıştırmak için aşağıdaki adımları izleyebilirsiniz.
 
@@ -102,10 +102,10 @@ Uygulamayı kendi ortamınızda çalıştırmak için aşağıdaki adımları iz
 
 ---
 
-## 📝 Gelecek Geliştirmeler (Roadmap)
+##  Gelecek Geliştirmeler (Roadmap)
 - Tam zamanlı web senkronizasyonu ve mobil destek.
 - Kaynaklar üzerinde zengin metin düzenleme (Rich Text Editor) ile not alma (Highlights & Notes).
 - Markdown formatında içeri ve dışarı aktarma yetenekleri.
 
 ---
-**Not:** Bu projedeki tüm değişiklikler ve kararlar `/docs/wiki` içerisindeki dokümantasyon esas alınarak yapılmaktadır. Projeye katkı sağlarken lütfen mimari kurallara riayet ediniz.
+
