@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from models.category import Category
-from repositories.base_repository import BaseRepository
+from models import Category
+from .base_repository import BaseRepository
 
 
 class CategoryRepository(BaseRepository[Category]):
