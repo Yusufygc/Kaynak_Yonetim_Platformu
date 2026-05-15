@@ -3,7 +3,9 @@ from PySide6.QtGui import QFont
 
 class Fonts:
     FAMILY_PRIMARY = "Inter"
+    FAMILY_PRIMARY_FALLBACK = '"Inter", "Segoe UI Variable", "Segoe UI", "Arial"'
     FAMILY_MONO = "JetBrains Mono"
+    FAMILY_MONO_FALLBACK = '"JetBrains Mono", "Cascadia Code", "Consolas"'
 
     @staticmethod
     def h1() -> QFont:
