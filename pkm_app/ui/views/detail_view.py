@@ -3,11 +3,11 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QComboBox,
-    QDoubleSpinBox,
     QFrame,
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSpinBox,
     QStackedWidget,
     QTextEdit,
     QVBoxLayout,
@@ -16,11 +16,14 @@ from PySide6.QtWidgets import (
 
 import qtawesome as qta
 
+from core.constants.colors import Colors
 from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
+from core.constants.status import status_label
 from core.events import event_bus
-from models.resource import Resource, ResourceStatus
+from models import Resource, ResourceStatus
 from ui.components.resource_form import ResourceForm
+from ui.theme_utils import resolve_theme_color
 
 _PAGE_EMPTY = 0
 _PAGE_VIEW = 1
@@ -30,7 +33,7 @@ _PAGE_FORM = 2
 class DetailView(QFrame):
     """Sag panel: bos / kaynak detay / kaynak formu."""
 
-    progress_updated = Signal(int, float)
+    progress_updated = Signal(int, int)
     status_updated = Signal(int, object)   # (resource_id, ResourceStatus enum)
     content_updated = Signal(int, str)     # (resource_id, notes text)
     form_submitted = Signal(dict)          # ResourceForm → MainWindow
@@ -87,7 +90,9 @@ class DetailView(QFrame):
         self._close_btn = QPushButton()
         self._close_btn.setObjectName("DetailCloseButton")
         self._close_btn.setFixedSize(28, 28)
-        self._close_btn.setIcon(qta.icon(QtAwesomeIcons.CLOSE, color="#ffffff"))
+        self._close_btn.setIcon(
+            qta.icon(QtAwesomeIcons.CLOSE, color=resolve_theme_color(None, Colors.ICON))
+        )
         self._close_btn.setToolTip(AppStrings.CLOSE_PANEL)
         header.addWidget(self._close_btn)
         root.addLayout(header)
@@ -104,16 +109,16 @@ class DetailView(QFrame):
         self._status_combo = QComboBox()
         self._status_combo.setObjectName("StatusCombo")
         for s in ResourceStatus:
-            self._status_combo.addItem(s.value, s)
+            self._status_combo.addItem(status_label(s), s)
         status_row.addWidget(self._status_combo, stretch=1)
         root.addLayout(status_row)
 
         progress_row = QHBoxLayout()
         progress_row.addWidget(QLabel(AppStrings.PROGRESS_LABEL))
-        self._progress_spin = QDoubleSpinBox()
+        self._progress_spin = QSpinBox()
         self._progress_spin.setObjectName("ProgressSpin")
-        self._progress_spin.setRange(0.0, 100.0)
-        self._progress_spin.setSingleStep(5.0)
+        self._progress_spin.setRange(0, 100)
+        self._progress_spin.setSingleStep(5)
         self._progress_spin.setSuffix(" %")
         progress_row.addWidget(self._progress_spin, stretch=1)
         root.addLayout(progress_row)
@@ -188,12 +193,15 @@ class DetailView(QFrame):
             self._status_combo.blockSignals(False)
 
         self._progress_spin.blockSignals(True)
-        self._progress_spin.setValue(resource.progress)
+        self._progress_spin.setValue(int(resource.progress))
         self._progress_spin.blockSignals(False)
 
         self._notes_edit.setPlainText(resource.content or "")
         self._stack.setCurrentIndex(_PAGE_VIEW)
         self.show()
+
+    def current_resource_id(self) -> int | None:
+        return self._resource_id
 
     def show_form(self, categories: list) -> None:
         """Yeni kaynak ekleme formu."""
@@ -228,7 +236,7 @@ class DetailView(QFrame):
             status: ResourceStatus = self._status_combo.currentData()
             self.status_updated.emit(self._resource_id, status)
 
-    def _on_progress_changed(self, value: float) -> None:
+    def _on_progress_changed(self, value: int) -> None:
         if self._resource_id is not None:
             self.progress_updated.emit(self._resource_id, value)
 
@@ -251,5 +259,5 @@ class DetailView(QFrame):
             self.delete_requested.emit(self._resource_id)
 
     def _on_theme_changed(self, theme_data: dict) -> None:
-        color = theme_data.get("icon_color", "#ffffff")
+        color = resolve_theme_color(theme_data, Colors.ICON)
         self._close_btn.setIcon(qta.icon(QtAwesomeIcons.CLOSE, color=color))
