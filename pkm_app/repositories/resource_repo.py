@@ -1,8 +1,8 @@
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from models.resource import Resource, ResourceStatus
-from repositories.base_repository import BaseRepository
+from models import Resource, ResourceStatus
+from .base_repository import BaseRepository
 
 
 class ResourceRepository(BaseRepository[Resource]):
@@ -32,7 +32,7 @@ class ResourceRepository(BaseRepository[Resource]):
         )
 
     def get_with_tags(self, tag_ids: list[int]) -> list[Resource]:
-        from models.resource import resource_tags_link
+        from models import resource_tags_link
         return (
             self._session.query(Resource)
             .join(resource_tags_link, Resource.id == resource_tags_link.c.resource_id)
