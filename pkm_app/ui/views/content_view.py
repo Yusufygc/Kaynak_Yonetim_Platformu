@@ -11,12 +11,14 @@ from PySide6.QtWidgets import (
 
 import qtawesome as qta
 
+from core.constants.colors import Colors
 from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.flow_layout import FlowLayout
 from ui.components.inline_banner import InlineBanner
 from ui.components.search_bar import SearchBar
+from ui.theme_utils import resolve_theme_color
 
 
 class ContentView(QFrame):
@@ -49,7 +51,9 @@ class ContentView(QFrame):
 
         self._add_btn = QPushButton(AppStrings.ADD_NEW)
         self._add_btn.setObjectName("AddButton")
-        self._add_btn.setIcon(qta.icon(QtAwesomeIcons.ADD, color="#ffffff"))
+        self._add_btn.setIcon(
+            qta.icon(QtAwesomeIcons.ADD, color=resolve_theme_color(None, Colors.ICON))
+        )
         top_bar.addWidget(self._add_btn)
 
         root.addLayout(top_bar)
@@ -116,5 +120,5 @@ class ContentView(QFrame):
     # ------------------------------------------------------------------ #
 
     def _on_theme_changed(self, theme_data: dict) -> None:
-        icon_color = theme_data.get("icon_color", "#ffffff")
+        icon_color = resolve_theme_color(theme_data, Colors.ICON)
         self._add_btn.setIcon(qta.icon(QtAwesomeIcons.ADD, color=icon_color))
