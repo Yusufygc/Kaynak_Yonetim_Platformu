@@ -16,19 +16,19 @@
 }
 
 #SettingsTabs QTabBar::tab {
-    background-color: {{bg_secondary}};
+    background-color: {{surface_elevated}};
     color: {{text_secondary}};
     padding: 6px 20px;
     border: 1px solid {{border_color}};
     border-bottom: none;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
 }
 
 #SettingsTabs QTabBar::tab:selected {
-    background-color: {{bg_primary}};
-    color: {{text_primary}};
-    font-weight: 600;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {{accent_gradient_start}}, stop:1 {{accent_gradient_end}});
+    color: {{on_accent}};
+    font-weight: 700;
 }
 
 #SettingsTabs QTabBar::tab:hover {
@@ -38,21 +38,22 @@
 #SettingsScrollArea {
     background-color: {{bg_primary}};
     border: 1px solid {{border_color}};
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
 /* --- Satir bilesenleri --- */
 
 #CategoryRow,
 #TagRow {
-    background-color: {{bg_secondary}};
+    background-color: {{surface_elevated}};
     border: 1px solid {{border_color}};
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
 #CategoryRow:hover,
 #TagRow:hover {
     border-color: {{accent_color}};
+    background-color: {{surface_hover}};
 }
 
 #CategoryRowLabel,
@@ -69,70 +70,70 @@
     background-color: {{bg_primary}};
     color: {{text_primary}};
     border: 1px solid {{border_color}};
-    border-radius: 5px;
-    padding: 3px 6px;
+    border-radius: 7px;
+    padding: 4px 7px;
     font-size: 12px;
 }
 
 #RowEditField:focus {
-    border-color: {{accent_color}};
+    border-color: {{focus_ring}};
 }
 
 #RowEditButton {
     background-color: transparent;
     color: {{accent_color}};
     border: 1px solid {{accent_color}};
-    border-radius: 5px;
-    padding: 3px 8px;
+    border-radius: 7px;
+    padding: 4px 8px;
     font-size: 11px;
 }
 
 #RowEditButton:hover {
-    background-color: {{accent_color}}22;
+    background-color: {{nav_selected_bg}};
 }
 
 #RowSaveButton {
-    background-color: {{accent_color}};
-    color: #ffffff;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {{accent_gradient_start}}, stop:1 {{accent_gradient_end}});
+    color: {{on_accent}};
     border: none;
-    border-radius: 5px;
-    padding: 3px 8px;
+    border-radius: 7px;
+    padding: 4px 8px;
     font-size: 11px;
     font-weight: 600;
 }
 
 #RowSaveButton:hover {
-    background-color: {{accent_color}}cc;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {{accent_secondary}}, stop:1 {{accent_gradient_end}});
 }
 
 #RowCancelButton {
     background-color: transparent;
     color: {{text_secondary}};
     border: 1px solid {{border_color}};
-    border-radius: 5px;
-    padding: 3px 6px;
+    border-radius: 7px;
+    padding: 4px 6px;
     font-size: 11px;
 }
 
 #RowDeleteButton {
     background-color: transparent;
-    color: #ff6b6b;
-    border: 1px solid #ff6b6b;
-    border-radius: 5px;
-    padding: 3px 8px;
+    color: {{danger_color}};
+    border: 1px solid {{danger_color}};
+    border-radius: 7px;
+    padding: 4px 8px;
     font-size: 11px;
 }
 
 #RowDeleteButton:hover {
-    background-color: #ff6b6b22;
+    background-color: {{danger_bg}};
 }
 
 #RowDeleteConfirmButton {
-    background-color: #ff4444;
-    color: #ffffff;
+    background-color: {{danger_hover}};
+    color: {{on_accent}};
     border: none;
-    border-radius: 5px;
-    padding: 3px 8px;
+    border-radius: 7px;
+    padding: 4px 8px;
     font-size: 11px;
     font-weight: 600;
 }
