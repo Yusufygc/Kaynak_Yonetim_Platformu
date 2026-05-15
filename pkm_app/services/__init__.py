@@ -1,6 +1,6 @@
-from services.resource_service import ResourceService
-from services.tag_service import TagService
-from services.category_service import CategoryService
+from .resource_service import ResourceService
+from .tag_service import TagService
+from .category_service import CategoryService
 
 __all__ = [
     "ResourceService",
