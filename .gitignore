@@ -62,3 +62,4 @@ Thumbs.db
 # === Dökümantasyon (commit disi) ===
 docs/
 *.md
+!README.md
