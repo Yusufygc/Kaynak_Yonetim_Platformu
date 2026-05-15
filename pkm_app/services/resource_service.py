@@ -9,10 +9,11 @@ from core.exceptions import (
     ValidationError,
 )
 from core.logger import log
-from models.resource import Resource, ResourceStatus
+from models import Resource, ResourceStatus, Tag
 from repositories.category_repo import CategoryRepository
 from repositories.resource_repo import ResourceRepository
 from repositories.tag_repo import TagRepository
+from .scraper_service import ScraperService
 
 _URL_RE = re.compile(
     r"^https?://"
@@ -23,10 +24,76 @@ _URL_RE = re.compile(
     re.IGNORECASE,
 )
 
+_PLATFORM_TAGS = {
+    "youtube.com": "youtube",
+    "youtu.be": "youtube",
+    "linkedin.com": "linkedin",
+    "instagram.com": "instagram",
+    "github.com": "github",
+    "x.com": "twitter",
+    "twitter.com": "twitter",
+    "medium.com": "medium",
+    "substack.com": "substack",
+    "reddit.com": "reddit",
+}
+
 
 def _validate_url(url: str) -> None:
     if not _URL_RE.match(url):
         raise InvalidURLError(f"Gecersiz URL formati: {url!r}")
+
+
+def _normalize_tag_names(tag_names: list[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for tag_name in tag_names:
+        name = tag_name.lower().strip()
+        if name and name not in seen:
+            normalized.append(name)
+            seen.add(name)
+    return normalized
+
+
+def _url_tag_names(url: str | None) -> list[str]:
+    if not url:
+        return []
+
+    host = (urlparse(url).hostname or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    if host.startswith("m."):
+        host = host[2:]
+
+    for suffix, tag_name in _PLATFORM_TAGS.items():
+        if host == suffix or host.endswith(f".{suffix}"):
+            return [tag_name]
+
+    parts = [part for part in host.split(".") if part]
+    if len(parts) >= 2:
+        return [parts[-2]]
+    return parts[:1]
+
+
+def _merge_tag_names(tag_names: list[str], url: str | None) -> list[str]:
+    return _normalize_tag_names([*tag_names, *_url_tag_names(url)])
+
+
+def _status_for_progress(progress: float) -> ResourceStatus:
+    if progress >= 100:
+        return ResourceStatus.COMPLETED
+    if progress > 0:
+        return ResourceStatus.IN_PROGRESS
+    return ResourceStatus.PLANNED
+
+
+def _progress_for_status(status: ResourceStatus, current_progress: float) -> float:
+    if status in (ResourceStatus.INBOX, ResourceStatus.PLANNED):
+        return 0.0
+    if status == ResourceStatus.COMPLETED:
+        return 100.0
+    if status == ResourceStatus.IN_PROGRESS:
+        return current_progress if 0.0 < current_progress < 100.0 else 25.0
+    return current_progress
 
 
 class ResourceService:
@@ -36,6 +103,7 @@ class ResourceService:
         self._resource_repo = ResourceRepository(session)
         self._tag_repo = TagRepository(session)
         self._category_repo = CategoryRepository(session)
+        self._scraper = ScraperService()
 
     # ------------------------------------------------------------------ #
     # Okuma
@@ -92,15 +160,25 @@ class ResourceService:
         if priority not in (1, 2, 3):
             raise ValidationError("Oncelik degeri 1, 2 veya 3 olmalidir.")
 
+        extra_metadata = data.get("extra_metadata")
+        if url:
+            scraped_metadata = self._scraper.extract_metadata(url)
+            if isinstance(extra_metadata, dict):
+                extra_metadata = {**scraped_metadata, **extra_metadata}
+            else:
+                extra_metadata = scraped_metadata
+
+        initial_status = data.get("status", ResourceStatus.PLANNED)
+
         resource = Resource(
             title=title,
             url=url or None,
             category_id=category_id,
-            status=data.get("status", ResourceStatus.PLANNED),
+            status=initial_status,
             priority=priority,
-            progress=0.0,
+            progress=_progress_for_status(initial_status, 0.0),
             content=data.get("content"),
-            extra_metadata=data.get("extra_metadata"),
+            extra_metadata=extra_metadata,
         )
 
         # Once resource'u session'a ekle, sonra etiketleri bagla.
@@ -109,16 +187,9 @@ class ResourceService:
             self._session.add(resource)
             self._session.flush()  # ID atanir, iliski tablosu hazir olur
 
-            tag_names: list[str] = data.get("tag_names", [])
-            from models.tag import Tag as TagModel
-            for tag_name in tag_names:
-                normalized = tag_name.lower().strip()
-                tag = self._tag_repo.get_by_name(normalized)
-                if tag is None:
-                    tag = TagModel(name=normalized)
-                    self._session.add(tag)
-                    self._session.flush()
-                resource.tags.append(tag)
+            resource.tags = self._get_or_create_tags(
+                _merge_tag_names(data.get("tag_names", []), url)
+            )
 
             self._session.commit()
             log.info("Yeni kaynak eklendi: id=%d title=%r", resource.id, resource.title)
@@ -152,6 +223,15 @@ class ResourceService:
 
         if "status" in data:
             resource.status = data["status"]
+            if "progress" not in data:
+                resource.progress = _progress_for_status(resource.status, resource.progress)
+
+        if "progress" in data:
+            progress = float(data["progress"])
+            if not (0.0 <= progress <= 100.0):
+                raise ValueError("Ilerleme degeri 0-100 arasinda olmalidir.")
+            resource.progress = progress
+            resource.status = _status_for_progress(progress)
 
         if "priority" in data:
             priority = int(data["priority"])
@@ -165,10 +245,28 @@ class ResourceService:
         if "is_pinned" in data:
             resource.is_pinned = bool(data["is_pinned"])
 
-        if "extra_metadata" in data:
+        if resource.url and ("url" in data or "extra_metadata" in data):
+            scraped_metadata = self._scraper.extract_metadata(resource.url)
+            provided_metadata = data.get("extra_metadata")
+            if isinstance(provided_metadata, dict):
+                resource.extra_metadata = {**scraped_metadata, **provided_metadata}
+            elif "extra_metadata" in data:
+                resource.extra_metadata = scraped_metadata
+            else:
+                resource.extra_metadata = scraped_metadata
+        elif "extra_metadata" in data:
             resource.extra_metadata = data["extra_metadata"]
 
         try:
+            if "tag_names" in data or "url" in data:
+                base_tag_names = (
+                    data["tag_names"]
+                    if "tag_names" in data
+                    else [tag.name for tag in resource.tags]
+                )
+                resource.tags = self._get_or_create_tags(
+                    _merge_tag_names(base_tag_names, resource.url)
+                )
             self._resource_repo.update(resource)
             self._session.commit()
             log.info("Kaynak guncellendi: id=%d", resource_id)
@@ -185,9 +283,9 @@ class ResourceService:
 
         resource = self.get_by_id(resource_id)
         resource.progress = progress
+        resource.status = _status_for_progress(progress)
 
         if progress >= 100.0:
-            resource.status = ResourceStatus.COMPLETED
             log.info("Kaynak tamamlandi: id=%d", resource_id)
 
         try:
@@ -210,3 +308,14 @@ class ResourceService:
         except Exception:
             self._session.rollback()
             raise
+
+    def _get_or_create_tags(self, tag_names: list[str]) -> list[Tag]:
+        tags: list[Tag] = []
+        for normalized in _normalize_tag_names(tag_names):
+            tag = self._tag_repo.get_by_name(normalized)
+            if tag is None:
+                tag = Tag(name=normalized)
+                self._session.add(tag)
+                self._session.flush()
+            tags.append(tag)
+        return tags
