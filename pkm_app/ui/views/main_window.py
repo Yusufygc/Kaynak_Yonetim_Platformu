@@ -201,3 +201,9 @@ class MainWindow(QMainWindow):
         elif self._main_stack.currentIndex() == _PAGE_URL_SHOWCASE:
             resources = self._controller.load_resources_by_filter("url_showcase")
             self._url_showcase.load_resources(resources)
+
+        current_detail_id = self._detail_view.current_resource_id()
+        if current_detail_id is not None:
+            resource = self._controller.get_resource(current_detail_id)
+            if resource is not None:
+                self._detail_view.load_resource(resource)
