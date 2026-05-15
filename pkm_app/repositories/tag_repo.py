@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from models.tag import Tag
-from repositories.base_repository import BaseRepository
+from models import Tag
+from .base_repository import BaseRepository
 
 
 class TagRepository(BaseRepository[Tag]):
