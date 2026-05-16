@@ -38,10 +38,15 @@ class MainController:
             return self._resource_svc.get_by_status(ResourceStatus.PLANNED)
         if filter_key == "url_showcase":
             return self._resource_svc.get_urls_only()
+        if filter_key == "favorites":
+            return self._resource_svc.get_favorites()
         if filter_key.startswith("category:"):
             cat_id = int(filter_key.split(":")[1])
             return self._resource_svc.get_by_category(cat_id)
         return self._resource_svc.get_all()
+
+    def load_resources_with_filters(self, filters: dict) -> list[Resource]:
+        return self._resource_svc.query_resources(filters)
 
     def get_resource(self, resource_id: int) -> Resource | None:
         try:
@@ -74,6 +79,22 @@ class MainController:
             log.error("[%s] Kaynak guncellenemedi: %s", exc.__class__.__name__, exc)
             event_bus.error_occurred.emit(str(exc))
             return None
+
+    def toggle_pin(self, resource_id: int) -> None:
+        try:
+            self._resource_svc.toggle_pin(resource_id)
+            event_bus.resource_updated.emit(resource_id)
+        except Exception as exc:
+            log.error("Pin durumu degistirilemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
+
+    def toggle_favorite(self, resource_id: int) -> None:
+        try:
+            self._resource_svc.toggle_favorite(resource_id)
+            event_bus.resource_updated.emit(resource_id)
+        except Exception as exc:
+            log.error("Favori durumu degistirilemedi: %s", exc)
+            event_bus.error_occurred.emit(str(exc))
 
     def update_progress(self, resource_id: int, progress: float) -> None:
         try:
