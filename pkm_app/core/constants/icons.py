@@ -1,6 +1,6 @@
-from pathlib import Path
+from core.paths import resource_path
 
-ICONS_DIR = Path(__file__).resolve().parent.parent.parent / "assets" / "icons"
+ICONS_DIR = resource_path("assets", "icons")
 
 
 class QtAwesomeIcons:
