@@ -22,6 +22,7 @@ _STATIC_ITEMS = [
     (AppStrings.ALL_RESOURCES, QtAwesomeIcons.ALL_RESOURCES, "all"),
     (AppStrings.INBOX, QtAwesomeIcons.INBOX, "inbox"),
     (AppStrings.PLANNED, QtAwesomeIcons.PLANNED, "planned"),
+    (AppStrings.FAVORITES, QtAwesomeIcons.FAVORITE, "favorites"),
     (AppStrings.URL_SHOWCASE, QtAwesomeIcons.URL_SHOWCASE, "url_showcase"),
     (AppStrings.SETTINGS, QtAwesomeIcons.SETTINGS, "settings"),
 ]
