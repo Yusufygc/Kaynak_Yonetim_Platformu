@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.category_row import CategoryRow
+from ui.components.color_picker_button import ColorPickerButton
 from ui.components.inline_banner import InlineBanner
 from ui.components.tag_row import TagRow
 
@@ -84,11 +85,10 @@ class SettingsView(QFrame):
         self._cat_name_input.setPlaceholderText(AppStrings.CATEGORY_NAME)
         add_row.addWidget(self._cat_name_input, stretch=2)
 
-        self._cat_color_input = QLineEdit()
-        self._cat_color_input.setObjectName("FormField")
-        self._cat_color_input.setPlaceholderText(AppStrings.CATEGORY_COLOR)
-        self._cat_color_input.setFixedWidth(120)
-        add_row.addWidget(self._cat_color_input)
+        self._cat_color_picker = ColorPickerButton()
+        self._cat_color_picker.setFixedWidth(140)
+        self._cat_color_picker.setToolTip(AppStrings.CATEGORY_COLOR)
+        add_row.addWidget(self._cat_color_picker)
 
         self._cat_icon_input = QLineEdit()
         self._cat_icon_input.setObjectName("FormField")
@@ -213,15 +213,18 @@ class SettingsView(QFrame):
 
     def _on_add_category(self) -> None:
         name = self._cat_name_input.text().strip()
-        color = self._cat_color_input.text().strip()
+        color = self._cat_color_picker.value()
         icon = self._cat_icon_input.text().strip()
-        if not name or not color:
-            self._banner.show_error("Ad ve renk zorunludur.")
+        if not name:
+            self._banner.show_error("Kategori adı zorunludur.")
+            return
+        if not color:
+            self._banner.show_error(AppStrings.ERR_COLOR_REQUIRED)
             return
         result = self._controller.create_category(name, color, icon)
         if result:
             self._cat_name_input.clear()
-            self._cat_color_input.clear()
+            self._cat_color_picker.clear()
             self._cat_icon_input.clear()
             self._banner.show_info(f"'{result.name}' kategorisi eklendi.")
 
