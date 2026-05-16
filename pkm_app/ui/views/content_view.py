@@ -7,14 +7,17 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QLabel,
+    QStackedWidget,
 )
 
+# pyrefly: ignore [missing-import]
 import qtawesome as qta
 
 from core.constants.colors import Colors
 from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
+from ui.components.filter_bar import FilterBar
 from ui.components.flow_layout import FlowLayout
 from ui.components.inline_banner import InlineBanner
 from ui.components.search_bar import SearchBar
@@ -25,6 +28,7 @@ class ContentView(QFrame):
     """Orta panel: arama cubugu + FlowLayout kart alani."""
 
     add_requested = Signal()
+    filters_changed = Signal(dict)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -58,11 +62,17 @@ class ContentView(QFrame):
 
         root.addLayout(top_bar)
 
+        # --- Filter bar ---
+        self.filter_bar = FilterBar()
+        root.addWidget(self.filter_bar)
+
         # --- Inline banner ---
         self._banner = InlineBanner()
         root.addWidget(self._banner)
 
         # --- Kart alanı ---
+        self._content_stack = QStackedWidget()
+
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setObjectName("CardScrollArea")
@@ -74,19 +84,21 @@ class ContentView(QFrame):
         self._card_container.setLayout(self._flow_layout)
 
         self._scroll.setWidget(self._card_container)
-        root.addWidget(self._scroll)
+        self._content_stack.addWidget(self._scroll)
 
         # --- Boş durum widget'ı ---
         self._empty_state = QLabel(AppStrings.EMPTY_STATE_MSG)
         self._empty_state.setObjectName("EmptyStateLabel")
         self._empty_state.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._empty_state.setWordWrap(True)
-        self._empty_state.hide()
-        root.addWidget(self._empty_state)
+        self._content_stack.addWidget(self._empty_state)
+        
+        root.addWidget(self._content_stack, stretch=1)
 
     def _connect_signals(self) -> None:
         self._add_btn.clicked.connect(self.add_requested)
         self._search_bar.search_changed.connect(event_bus.search_query_changed)
+        self.filter_bar.filters_changed.connect(self.filters_changed)
 
     # ------------------------------------------------------------------ #
     # Kart yönetimi
@@ -102,8 +114,7 @@ class ContentView(QFrame):
         self._flow_layout.addWidget(card)
 
     def show_empty_state(self, visible: bool) -> None:
-        self._scroll.setVisible(not visible)
-        self._empty_state.setVisible(visible)
+        self._content_stack.setCurrentIndex(1 if visible else 0)
 
     # ------------------------------------------------------------------ #
     # Banner API
