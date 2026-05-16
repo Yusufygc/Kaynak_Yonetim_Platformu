@@ -179,3 +179,58 @@ def test_validation_errors_leave_session_usable(session, data, expected_error):
 
     resource = service.add_new_resource({"title": "Valid"})
     assert resource.id is not None
+
+
+def test_toggle_pin_flips_value(session):
+    service = ResourceService(session)
+    resource = service.add_new_resource({"title": "Pin Me"})
+    assert resource.is_pinned is False
+
+    service.toggle_pin(resource.id)
+    session.expire_all()
+    assert session.get(Resource, resource.id).is_pinned is True
+
+    service.toggle_pin(resource.id)
+    session.expire_all()
+    assert session.get(Resource, resource.id).is_pinned is False
+
+
+def test_toggle_favorite_flips_value(session):
+    service = ResourceService(session)
+    resource = service.add_new_resource({"title": "Star Me"})
+    assert resource.is_favorite is False
+
+    service.toggle_favorite(resource.id)
+    session.expire_all()
+    assert session.get(Resource, resource.id).is_favorite is True
+
+
+def test_query_resources_combines_filters(session):
+    service = ResourceService(session)
+    r1 = service.add_new_resource(
+        {"title": "Hi", "status": ResourceStatus.INBOX, "priority": 1}
+    )
+    service.add_new_resource(
+        {"title": "Lo", "status": ResourceStatus.PLANNED, "priority": 3}
+    )
+    service.toggle_favorite(r1.id)
+
+    results = service.query_resources(
+        {"statuses": [ResourceStatus.INBOX], "priorities": [1]}
+    )
+    assert [r.id for r in results] == [r1.id]
+
+    favs = service.query_resources({"favorites_only": True})
+    assert [r.id for r in favs] == [r1.id]
+
+
+def test_query_resources_orders_pinned_first(session):
+    service = ResourceService(session)
+    old = service.add_new_resource({"title": "Old"})
+    new = service.add_new_resource({"title": "New"})
+
+    service.toggle_pin(old.id)
+
+    results = service.query_resources({})
+    assert results[0].id == old.id  # pinned > created_at
+    assert results[1].id == new.id
