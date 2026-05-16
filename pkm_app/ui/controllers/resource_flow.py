@@ -31,6 +31,12 @@ class ResourceFlow:
         event_bus.resource_deleted.connect(self._on_resource_deleted)
         event_bus.error_occurred.connect(self._workspace.show_error_banner)
 
+        # Pin / Favori toggle
+        event_bus.resource_pin_toggle_requested.connect(self._controller.toggle_pin)
+        event_bus.resource_favorite_toggle_requested.connect(
+            self._controller.toggle_favorite
+        )
+
         # Workspace → flow
         self._workspace.add_requested.connect(self._on_add_requested)
 
