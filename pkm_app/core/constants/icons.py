@@ -18,9 +18,12 @@ class QtAwesomeIcons:
     THEME_DARK = "fa5s.moon"
     THEME_LIGHT = "fa5s.sun"
     PINNED = "fa5s.thumbtack"
+    FAVORITE = "fa5s.star"
+    FAVORITE_OUTLINE = "fa5s.star"  # qtawesome free FA5 regular yok; solid kullan, renk farki ile
     DELETE = "fa5s.trash-alt"
     EDIT = "fa5s.pen"
     SETTINGS = "fa5s.cog"
+    FILTER_CLEAR = "fa5s.times-circle"
 
 
 class CustomIcons:
