@@ -1,7 +1,8 @@
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QStackedWidget, QVBoxLayout, QWidget
 
-from models import Resource
+from core.events import event_bus
+from models import Resource, ResourceStatus
 from ui.components.resource_card import ResourceCard
 from ui.views.content_view import ContentView
 from ui.views.settings_view import SettingsView
@@ -15,10 +16,9 @@ _PAGE_URL_SHOWCASE = 2
 class ContentWorkspace(QWidget):
     """Orta panel: ContentView / SettingsView / UrlShowcaseView arasi filter dispatcher.
 
-    Sidebar'dan gelen filter_key'i alir, dogru sayfayi gosterir ve controller
-    araciligiyla kayitlari listeler. Detay paneli ile dogrudan etkilesmez;
-    karsilikli kupling olmamasi icin yalnizca ContentView'in `add_requested`
-    sinyalini disariya relay eder.
+    Sidebar'dan gelen filter_key'i (all/inbox/planned/favorites/url_showcase/settings)
+    ve FilterBar'dan gelen kombinasyonel filtreleri birlestirip controller'a iletir.
+    Aktif sayfa + aktif filtre kombinasyonu state olarak burada tutulur.
     """
 
     add_requested = Signal()
@@ -27,14 +27,29 @@ class ContentWorkspace(QWidget):
         super().__init__(parent)
         self._controller = controller
         self._current_filter: str = "all"
+        self._active_filters: dict = {}
 
         self._build_ui()
 
-        # Filter -> handler dispatch tablosu. apply_filter icinde kullanilir.
         self._dispatch = {
             "settings": self._show_settings,
             "url_showcase": self._show_url_showcase,
+            "favorites": self._show_favorites,
         }
+
+        # FilterBar sinyalleri
+        self._content_view.filters_changed.connect(self._on_filters_changed)
+        self._url_showcase.filters_changed.connect(self._on_filters_changed)
+
+        # Kategori/etiket CRUD sonrasi FilterBar'lari yenile
+        event_bus.category_added.connect(self._refresh_filter_data)
+        event_bus.category_updated.connect(self._refresh_filter_data)
+        event_bus.category_deleted.connect(self._refresh_filter_data)
+        event_bus.tag_added.connect(self._refresh_filter_data)
+        event_bus.tag_updated.connect(self._refresh_filter_data)
+        event_bus.tag_deleted.connect(self._refresh_filter_data)
+
+        self._refresh_filter_data()
 
     # ------------------------------------------------------------------ #
     # Kurulum
@@ -63,7 +78,11 @@ class ContentWorkspace(QWidget):
     # ------------------------------------------------------------------ #
 
     def apply_filter(self, filter_key: str) -> None:
-        """Sidebar veya search'ten gelen filter_key'i uygular."""
+        # Sidebar geçişi yeni bağlam → FilterBar resetle.
+        self._active_filters = {}
+        self._content_view.filter_bar.clear()
+        self._url_showcase.filter_bar.clear()
+
         handler = self._dispatch.get(filter_key)
         if handler is not None:
             handler()
@@ -76,10 +95,11 @@ class ContentWorkspace(QWidget):
         self._show_content(filter_key)
 
     def refresh(self) -> None:
-        """Aktif filter'i tekrar uygular (kaynak ekleme/silme/guncelleme sonrasi)."""
         idx = self._stack.currentIndex()
         if idx == _PAGE_URL_SHOWCASE:
             self._show_url_showcase()
+        elif self._current_filter == "favorites":
+            self._show_favorites()
         else:
             self._show_content(self._current_filter)
 
@@ -102,19 +122,40 @@ class ContentWorkspace(QWidget):
 
     def _show_url_showcase(self) -> None:
         self._stack.setCurrentIndex(_PAGE_URL_SHOWCASE)
-        resources = self._controller.load_resources_by_filter("url_showcase")
+        filters = {**self._active_filters, "urls_only": True}
+        resources = self._controller.load_resources_with_filters(filters)
         self._url_showcase.load_resources(resources)
+
+    def _show_favorites(self) -> None:
+        self._current_filter = "favorites"
+        self._stack.setCurrentIndex(_PAGE_CONTENT)
+        filters = {**self._active_filters, "favorites_only": True}
+        resources = self._controller.load_resources_with_filters(filters)
+        self._render_resources(resources)
 
     def _show_search(self, keyword: str) -> None:
         self._stack.setCurrentIndex(_PAGE_CONTENT)
-        resources = self._controller.search_resources(keyword)
+        filters = {**self._active_filters, "keyword": keyword}
+        resources = self._controller.load_resources_with_filters(filters)
         self._render_resources(resources)
 
     def _show_content(self, filter_key: str) -> None:
         self._current_filter = filter_key
         self._stack.setCurrentIndex(_PAGE_CONTENT)
-        resources = self._controller.load_resources_by_filter(filter_key)
+        filters = self._merged_filters_for_sidebar(filter_key)
+        resources = self._controller.load_resources_with_filters(filters)
         self._render_resources(resources)
+
+    def _merged_filters_for_sidebar(self, filter_key: str) -> dict:
+        filters = {**self._active_filters}
+        if filter_key == "inbox":
+            filters["statuses"] = [ResourceStatus.INBOX]
+        elif filter_key == "planned":
+            filters["statuses"] = [ResourceStatus.PLANNED]
+        elif filter_key.startswith("category:"):
+            filters["category_id"] = int(filter_key.split(":")[1])
+        # "all" → ek koşul yok
+        return filters
 
     def _render_resources(self, resources: list[Resource]) -> None:
         self._content_view.clear_cards()
@@ -124,3 +165,18 @@ class ContentWorkspace(QWidget):
         self._content_view.show_empty_state(False)
         for resource in resources:
             self._content_view.add_card(ResourceCard(resource))
+
+    # ------------------------------------------------------------------ #
+    # FilterBar slot'lari
+    # ------------------------------------------------------------------ #
+
+    def _on_filters_changed(self, filters: dict) -> None:
+        self._active_filters = filters
+        self.refresh()
+
+    def _refresh_filter_data(self, *_args) -> None:
+        categories = self._controller.load_categories()
+        tags = self._controller.load_tags()
+        for fb in (self._content_view.filter_bar, self._url_showcase.filter_bar):
+            fb.set_categories(categories)
+            fb.set_tags(tags)
