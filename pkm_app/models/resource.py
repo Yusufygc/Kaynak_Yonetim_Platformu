@@ -51,6 +51,7 @@ class Resource(Base):
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     progress: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     is_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
     extra_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
