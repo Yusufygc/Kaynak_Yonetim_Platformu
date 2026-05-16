@@ -6,6 +6,7 @@ from models import Resource, ResourceStatus
 from services.category_service import CategoryService
 from services.resource_service import ResourceService
 from services.tag_service import TagService
+from services.idea_service import IdeaService
 
 
 class MainController:
@@ -16,6 +17,7 @@ class MainController:
         self._resource_svc = ResourceService(session)
         self._category_svc = CategoryService(session)
         self._tag_svc = TagService(session)
+        self._idea_svc = IdeaService(session)
 
         self._connect_events()
 
@@ -180,6 +182,40 @@ class MainController:
             log.error("Etiket silinemedi: %s", exc)
             event_bus.error_occurred.emit(str(exc))
             return False
+
+    # ------------------------------------------------------------------ #
+    # Ideas (Fikirler)
+    # ------------------------------------------------------------------ #
+
+    def load_ideas(self):
+        try:
+            return self._idea_svc.get_all_ideas()
+        except Exception as e:
+            event_bus.error_occurred.emit(str(e))
+            return []
+
+    def get_idea(self, idea_id: int):
+        return self._idea_svc.get_idea(idea_id)
+
+    def add_idea(self, data: dict):
+        try:
+            return self._idea_svc.create_idea(**data)
+        except Exception as e:
+            event_bus.error_occurred.emit(str(e))
+            return None
+
+    def update_idea(self, idea_id: int, updates: dict):
+        try:
+            return self._idea_svc.update_idea(idea_id, updates)
+        except Exception as e:
+            event_bus.error_occurred.emit(str(e))
+            return None
+
+    def delete_idea(self, idea_id: int) -> None:
+        try:
+            self._idea_svc.delete_idea(idea_id)
+        except Exception as e:
+            event_bus.error_occurred.emit(str(e))
 
     # ------------------------------------------------------------------ #
     # Slot'lar

@@ -19,11 +19,12 @@ from ui.theme_utils import resolve_theme_color
 
 
 _STATIC_ITEMS = [
-    (AppStrings.ALL_RESOURCES, QtAwesomeIcons.ALL_RESOURCES, "all"),
+    (AppStrings.ALL_RESOURCES, QtAwesomeIcons.ALL, "all"),
     (AppStrings.INBOX, QtAwesomeIcons.INBOX, "inbox"),
     (AppStrings.PLANNED, QtAwesomeIcons.PLANNED, "planned"),
     (AppStrings.FAVORITES, QtAwesomeIcons.FAVORITE, "favorites"),
     (AppStrings.URL_SHOWCASE, QtAwesomeIcons.URL_SHOWCASE, "url_showcase"),
+    (AppStrings.IDEAS, QtAwesomeIcons.IDEAS, "ideas"),
     (AppStrings.SETTINGS, QtAwesomeIcons.SETTINGS, "settings"),
 ]
 
@@ -59,6 +60,8 @@ class Sidebar(QFrame):
         self._nav_list = QListWidget()
         self._nav_list.setObjectName("SidebarNavList")
         self._nav_list.setSpacing(2)
+        self._nav_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._nav_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         icon_color = resolve_theme_color(None, Colors.ICON)
         for label, icon_name, key in _STATIC_ITEMS:
             item = QListWidgetItem(label)
