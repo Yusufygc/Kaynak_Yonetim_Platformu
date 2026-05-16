@@ -66,6 +66,24 @@
     border-radius: 3px;
 }
 
+#ColorPickerButton {
+    background-color: {{bg_secondary}};
+    color: {{text_primary}};
+    border: 1px solid {{border_color}};
+    border-radius: 7px;
+    text-align: left;
+    min-height: 26px;
+}
+
+#ColorPickerButton:hover {
+    border-color: {{accent_color}};
+}
+
+#ColorPickerText {
+    color: {{text_secondary}};
+    font-size: 12px;
+}
+
 #RowEditField {
     background-color: {{bg_primary}};
     color: {{text_primary}};
