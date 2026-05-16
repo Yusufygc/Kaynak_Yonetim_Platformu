@@ -7,6 +7,7 @@ class AppStrings:
     INBOX = "Gelen Kutusu"
     PLANNED = "Planlananlar"
     URL_SHOWCASE = "Bağlantı Vitrini"
+    FAVORITES = "Favoriler"
     CATEGORIES = "Kategoriler"
     TAGS = "Etiketler"
     TOGGLE_THEME = "Tema Değiştir"
@@ -77,3 +78,23 @@ class AppStrings:
     ERR_PROGRESS_RANGE = "İlerleme değeri 0-100 arasında olmalıdır."
     ERR_TITLE_REQUIRED = "Başlık boş bırakılamaz."
     ERR_HEX_FORMAT = "Renk formatı #RRGGBB olmalı (örnek: #3B82F6)."
+    ERR_COLOR_REQUIRED = "Renk seçilmelidir."
+
+    # Renk seçici
+    PICK_COLOR_PLACEHOLDER = "Renk seç..."
+    PICK_COLOR_TITLE = "Kategori rengini seçin"
+
+    # Filtre çubuğu
+    FILTER_CATEGORY = "Kategori"
+    FILTER_TAG = "Etiket"
+    FILTER_STATUS = "Durum"
+    FILTER_PRIORITY = "Öncelik"
+    FILTER_ANY = "Hepsi"
+    FILTER_CLEAR = "Temizle"
+    FILTER_TAG_PLACEHOLDER = "Etiket seç..."
+
+    # Pin / Favori
+    PIN_TOOLTIP = "Sabitle"
+    UNPIN_TOOLTIP = "Sabitlemeyi kaldır"
+    FAVORITE_TOOLTIP = "Favoriye ekle"
+    UNFAVORITE_TOOLTIP = "Favoriden çıkar"
