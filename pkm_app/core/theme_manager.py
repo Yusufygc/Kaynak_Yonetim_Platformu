@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QApplication
@@ -8,11 +7,12 @@ from PySide6.QtWidgets import QApplication
 from core.config import settings
 from core.constants.colors import Colors
 from core.logger import log
+from core.paths import resource_path
 
 if TYPE_CHECKING:
     pass
 
-_STYLES_DIR = Path(__file__).resolve().parent.parent / "assets" / "styles"
+_STYLES_DIR = resource_path("assets", "styles")
 
 
 class _ThemeManager:
