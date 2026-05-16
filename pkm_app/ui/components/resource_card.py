@@ -14,8 +14,9 @@ from core.constants.icons import QtAwesomeIcons
 from core.constants.status import status_label
 from core.events import event_bus
 from models import Resource, ResourceStatus
+from ui.components.card_icon_button import FavoriteButton, PinButton
 from ui.components.painted import AccentFrame, ColorBadge
-from ui.theme_utils import resolve_theme_color, with_alpha
+from ui.theme_utils import resolve_theme_color, valid_or_fallback, with_alpha
 from utils.date_utils import format_date
 
 _CARD_WIDTH = 240
@@ -49,7 +50,7 @@ class ResourceCard(AccentFrame):
         self.setObjectName("ResourceCard")
         self.setFixedSize(_CARD_WIDTH, _CARD_HEIGHT)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.set_accent_color(self._status_color(resource.status))
+        self.set_accent_color(self._resolve_accent_color(resource))
         self.set_shadow_color(resolve_theme_color(self._theme_data, Colors.SHADOW))
 
         self._build_ui(resource)
@@ -79,6 +80,11 @@ class ResourceCard(AccentFrame):
                 vertical_padding=1,
             )
             top_row.addWidget(self._status_badge)
+
+        self._pin_btn = PinButton(resource.id, bool(resource.is_pinned))
+        self._favorite_btn = FavoriteButton(resource.id, bool(resource.is_favorite))
+        top_row.addWidget(self._pin_btn)
+        top_row.addWidget(self._favorite_btn)
         layout.addLayout(top_row)
 
         title = QLabel(resource.title)
@@ -124,12 +130,16 @@ class ResourceCard(AccentFrame):
         layout.addLayout(bottom_row)
 
     def mousePressEvent(self, event) -> None:
+        # Pin/favori butonlari kendi tiklamasini yutar; buraya gelinmez.
+        # Diger alanlara tiklayinca kayit secimi yapilir.
+        if self._pin_btn.underMouse() or self._favorite_btn.underMouse():
+            return super().mousePressEvent(event)
         event_bus.resource_selected.emit(self._resource_id)
         super().mousePressEvent(event)
 
     def _on_theme_changed(self, theme_data: dict) -> None:
         self._theme_data = theme_data
-        self.set_accent_color(self._status_color(self._resource.status))
+        self.set_accent_color(self._resolve_accent_color(self._resource))
         self.set_shadow_color(resolve_theme_color(self._theme_data, Colors.SHADOW))
         if self._status_badge is not None:
             status_color = self._status_color(self._resource.status)
@@ -145,6 +155,15 @@ class ResourceCard(AccentFrame):
     def _status_color(self, status: ResourceStatus) -> str:
         key = _STATUS_COLOR_KEYS.get(status, Colors.ACCENT)
         return resolve_theme_color(self._theme_data, key)
+
+    def _resolve_accent_color(self, resource: Resource) -> str:
+        """Kart sol şerit rengi: kategori varsa kategori HEX, yoksa status fallback."""
+        if resource.category and resource.category.color_hex:
+            return valid_or_fallback(
+                resource.category.color_hex,
+                self._status_color(resource.status),
+            )
+        return self._status_color(resource.status)
 
     def _update_category_icon(self) -> None:
         if self._cat_icon_label is None:
