@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.constants.strings import AppStrings
+from core.events import event_bus
 from models import ResourceStatus
 
 
@@ -146,7 +147,6 @@ class ResourceForm(QFrame):
     def _on_save(self) -> None:
         title = self._title_input.text().strip()
         if not title:
-            from core.events import event_bus
             event_bus.error_occurred.emit(AppStrings.ERR_TITLE_REQUIRED)
             return
 
