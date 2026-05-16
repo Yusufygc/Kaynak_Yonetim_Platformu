@@ -12,7 +12,7 @@ from pkm_app.ui.components.resource_card import ResourceCard
 from pkm_app.ui.components.sidebar import Sidebar
 from pkm_app.ui.components.url_rich_card import UrlRichCard
 from pkm_app.core.events import event_bus
-from pkm_app.ui.views.detail_view import DetailView
+from pkm_app.ui.components.resource_detail_panel import ResourceDetailPanel
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -121,15 +121,15 @@ def test_painted_widgets_and_cards_smoke(qapp):
 
 
 def test_detail_view_status_options_are_turkish(qapp):
-    view = DetailView()
+    panel = ResourceDetailPanel()
 
     labels = [
-        view._status_combo.itemText(index)
-        for index in range(view._status_combo.count())
+        panel._status_combo.itemText(index)
+        for index in range(panel._status_combo.count())
     ]
 
     assert labels == [status_label(status) for status in ResourceStatus]
-    view.deleteLater()
+    panel.deleteLater()
 
 
 def test_resource_card_shows_content_description(qapp):
