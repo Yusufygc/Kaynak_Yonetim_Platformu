@@ -170,28 +170,35 @@ class SettingsView(QFrame):
         self._reload_tags()
 
     def _reload_categories(self, _id: int = 0) -> None:
-        self._clear_layout(self._cat_list_layout)
-        self._category_rows.clear()
-        for cat in self._controller.load_categories():
-            row = CategoryRow(cat)
-            row.edit_requested.connect(self._on_edit_category)
-            row.delete_requested.connect(self._on_delete_category)
-            self._cat_list_layout.insertWidget(
-                self._cat_list_layout.count() - 1, row
-            )
-            self._category_rows[cat.id] = row
+        self._reload_rows(
+            layout=self._cat_list_layout,
+            rows=self._category_rows,
+            items=self._controller.load_categories(),
+            row_cls=CategoryRow,
+            on_edit=self._on_edit_category,
+            on_delete=self._on_delete_category,
+        )
 
     def _reload_tags(self, _id: int = 0) -> None:
-        self._clear_layout(self._tag_list_layout)
-        self._tag_rows.clear()
-        for tag in self._controller.load_tags():
-            row = TagRow(tag)
-            row.edit_requested.connect(self._on_edit_tag)
-            row.delete_requested.connect(self._on_delete_tag)
-            self._tag_list_layout.insertWidget(
-                self._tag_list_layout.count() - 1, row
-            )
-            self._tag_rows[tag.id] = row
+        self._reload_rows(
+            layout=self._tag_list_layout,
+            rows=self._tag_rows,
+            items=self._controller.load_tags(),
+            row_cls=TagRow,
+            on_edit=self._on_edit_tag,
+            on_delete=self._on_delete_tag,
+        )
+
+    def _reload_rows(self, *, layout: QVBoxLayout, rows: dict,
+                     items: list, row_cls, on_edit, on_delete) -> None:
+        self._clear_layout(layout)
+        rows.clear()
+        for item in items:
+            row = row_cls(item)
+            row.edit_requested.connect(on_edit)
+            row.delete_requested.connect(on_delete)
+            layout.insertWidget(layout.count() - 1, row)
+            rows[item.id] = row
 
     @staticmethod
     def _clear_layout(layout: QVBoxLayout) -> None:
