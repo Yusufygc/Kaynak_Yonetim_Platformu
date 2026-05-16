@@ -2,6 +2,12 @@ from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 
+# Modellerin import edildiginden emin olun
+import models.category  # noqa: F401
+import models.tag  # noqa: F401
+import models.resource  # noqa: F401
+import models.idea  # noqa: F401
+from models.base import Base
 from core.config import settings
 from core.logger import log
 
