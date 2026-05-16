@@ -130,6 +130,20 @@ class ResourceService:
     def get_urls_only(self) -> list[Resource]:
         return self._resource_repo.get_urls_only()
 
+    def get_favorites(self) -> list[Resource]:
+        return self._resource_repo.get_favorites()
+
+    def query_resources(self, filters: dict) -> list[Resource]:
+        return self._resource_repo.query_filtered(
+            statuses=filters.get("statuses"),
+            category_id=filters.get("category_id"),
+            tag_ids=filters.get("tag_ids"),
+            priorities=filters.get("priorities"),
+            favorites_only=bool(filters.get("favorites_only", False)),
+            urls_only=bool(filters.get("urls_only", False)),
+            keyword=filters.get("keyword"),
+        )
+
     # ------------------------------------------------------------------ #
     # Yazma
     # ------------------------------------------------------------------ #
@@ -293,6 +307,34 @@ class ResourceService:
             log.exception("Ilerleme guncellenirken hata olustu.")
             raise
 
+        return resource
+
+    def toggle_pin(self, resource_id: int) -> Resource:
+        resource = self.get_by_id(resource_id)
+        new_value = not bool(resource.is_pinned)
+        try:
+            self._resource_repo.set_pinned(resource_id, new_value)
+            self._session.commit()
+            log.info("Kaynak pin durumu: id=%d pinned=%s", resource_id, new_value)
+        except Exception:
+            self._session.rollback()
+            log.exception("Pin durumu guncellenemedi.")
+            raise
+        return resource
+
+    def toggle_favorite(self, resource_id: int) -> Resource:
+        resource = self.get_by_id(resource_id)
+        new_value = not bool(resource.is_favorite)
+        try:
+            self._resource_repo.set_favorite(resource_id, new_value)
+            self._session.commit()
+            log.info(
+                "Kaynak favori durumu: id=%d favorite=%s", resource_id, new_value
+            )
+        except Exception:
+            self._session.rollback()
+            log.exception("Favori durumu guncellenemedi.")
+            raise
         return resource
 
     def delete_resource(self, resource_id: int) -> None:
