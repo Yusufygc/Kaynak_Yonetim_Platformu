@@ -17,6 +17,7 @@ from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from models import Resource
+from ui.components.card_icon_button import FavoriteButton, PinButton
 from ui.components.painted import AccentFrame, ColorBadge
 from ui.theme_utils import resolve_theme_color, valid_or_fallback, with_alpha
 
@@ -38,6 +39,8 @@ class UrlRichCard(AccentFrame):
         self._open_btn: QPushButton | None = None
         self._thumb_label: QLabel | None = None
         self._desc_label: QLabel | None = None
+        self._pin_btn: PinButton | None = None
+        self._favorite_btn: FavoriteButton | None = None
         self._thumbnail_url: str | None = None
         self._thumbnail_loaded = False
 
@@ -127,6 +130,11 @@ class UrlRichCard(AccentFrame):
 
         bottom.addStretch()
 
+        self._pin_btn = PinButton(resource.id, bool(resource.is_pinned))
+        self._favorite_btn = FavoriteButton(resource.id, bool(resource.is_favorite))
+        bottom.addWidget(self._pin_btn)
+        bottom.addWidget(self._favorite_btn)
+
         self._open_btn = QPushButton(AppStrings.OPEN_IN_BROWSER)
         self._open_btn.setObjectName("UrlOpenButton")
         self._open_btn.clicked.connect(self._open_in_browser)
@@ -136,7 +144,12 @@ class UrlRichCard(AccentFrame):
         layout.addLayout(bottom)
 
     def mousePressEvent(self, event) -> None:
-        if self._open_btn is not None and not self._open_btn.underMouse():
+        consumed_by_button = (
+            (self._open_btn is not None and self._open_btn.underMouse())
+            or (self._pin_btn is not None and self._pin_btn.underMouse())
+            or (self._favorite_btn is not None and self._favorite_btn.underMouse())
+        )
+        if not consumed_by_button:
             event_bus.resource_selected.emit(self._resource_id)
         super().mousePressEvent(event)
 
