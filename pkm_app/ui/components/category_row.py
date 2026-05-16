@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from core.constants.colors import Colors
 from core.constants.strings import AppStrings
 from core.events import event_bus
+from ui.components.color_picker_button import ColorPickerButton
 from ui.components.painted import ColorSwatch
 from ui.theme_utils import resolve_theme_color
 
@@ -55,12 +56,10 @@ class CategoryRow(QFrame):
         self._name_edit.hide()
         layout.addWidget(self._name_edit, stretch=1)
 
-        self._color_edit = QLineEdit(category.color_hex or "")
-        self._color_edit.setObjectName("RowEditField")
-        self._color_edit.setFixedWidth(90)
-        self._color_edit.setPlaceholderText("#RRGGBB")
-        self._color_edit.hide()
-        layout.addWidget(self._color_edit)
+        self._color_picker = ColorPickerButton(category.color_hex or "")
+        self._color_picker.setFixedWidth(130)
+        self._color_picker.hide()
+        layout.addWidget(self._color_picker)
 
         self._edit_btn = QPushButton(AppStrings.EDIT)
         self._edit_btn.setObjectName("RowEditButton")
@@ -92,7 +91,7 @@ class CategoryRow(QFrame):
     def _enter_edit_mode(self) -> None:
         self._name_label.hide()
         self._name_edit.show()
-        self._color_edit.show()
+        self._color_picker.show()
         self._edit_btn.hide()
         self._save_btn.show()
         self._cancel_edit_btn.show()
@@ -101,7 +100,7 @@ class CategoryRow(QFrame):
 
     def _exit_edit_mode(self) -> None:
         self._name_edit.hide()
-        self._color_edit.hide()
+        self._color_picker.hide()
         self._save_btn.hide()
         self._cancel_edit_btn.hide()
         self._name_label.show()
@@ -110,7 +109,7 @@ class CategoryRow(QFrame):
 
     def _on_save(self) -> None:
         name = self._name_edit.text().strip()
-        color = self._color_edit.text().strip()
+        color = self._color_picker.value()
         if not name or not color:
             return
         self._cat_color = color
@@ -133,7 +132,7 @@ class CategoryRow(QFrame):
         self._cat_color = category.color_hex or ""
         self._name_label.setText(category.name)
         self._name_edit.setText(category.name)
-        self._color_edit.setText(category.color_hex or "")
+        self._color_picker.set_value(category.color_hex or "")
         self._cat_icon = category.icon or ""
         self._refresh_swatch()
 
