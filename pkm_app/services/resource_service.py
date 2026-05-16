@@ -160,13 +160,12 @@ class ResourceService:
         if priority not in (1, 2, 3):
             raise ValidationError("Oncelik degeri 1, 2 veya 3 olmalidir.")
 
-        extra_metadata = data.get("extra_metadata")
-        if url:
-            scraped_metadata = self._scraper.extract_metadata(url)
-            if isinstance(extra_metadata, dict):
-                extra_metadata = {**scraped_metadata, **extra_metadata}
-            else:
-                extra_metadata = scraped_metadata
+        extra_metadata = self._resolve_extra_metadata(
+            url=url,
+            provided=data.get("extra_metadata"),
+            scrape=bool(url),
+            fallback=None,
+        )
 
         initial_status = data.get("status", ResourceStatus.PLANNED)
 
@@ -246,14 +245,12 @@ class ResourceService:
             resource.is_pinned = bool(data["is_pinned"])
 
         if resource.url and ("url" in data or "extra_metadata" in data):
-            scraped_metadata = self._scraper.extract_metadata(resource.url)
-            provided_metadata = data.get("extra_metadata")
-            if isinstance(provided_metadata, dict):
-                resource.extra_metadata = {**scraped_metadata, **provided_metadata}
-            elif "extra_metadata" in data:
-                resource.extra_metadata = scraped_metadata
-            else:
-                resource.extra_metadata = scraped_metadata
+            resource.extra_metadata = self._resolve_extra_metadata(
+                url=resource.url,
+                provided=data.get("extra_metadata"),
+                scrape=True,
+                fallback=resource.extra_metadata,
+            )
         elif "extra_metadata" in data:
             resource.extra_metadata = data["extra_metadata"]
 
@@ -308,6 +305,29 @@ class ResourceService:
         except Exception:
             self._session.rollback()
             raise
+
+    def _resolve_extra_metadata(
+        self,
+        *,
+        url: str | None,
+        provided: dict | None,
+        scrape: bool,
+        fallback,
+    ):
+        """add ve update arasinda paylasilan extra_metadata cozumleyici.
+
+        - url + scrape: scraper sonucu + provided dict varsa onu uzerine ezer.
+        - url yok ama provided varsa: provided dondurulur.
+        - aksi halde fallback (mevcut resource degeri ya da None).
+        """
+        if url and scrape:
+            scraped = self._scraper.extract_metadata(url)
+            if isinstance(provided, dict):
+                return {**scraped, **provided}
+            return scraped
+        if isinstance(provided, dict):
+            return provided
+        return fallback
 
     def _get_or_create_tags(self, tag_names: list[str]) -> list[Tag]:
         tags: list[Tag] = []
