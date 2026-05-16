@@ -1,8 +1,10 @@
 import sys
 from pathlib import Path
 
-# pkm_app/ dizinini Python yoluna ekle
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Dev modunda pkm_app/ paketini sys.path'e ekle. Frozen exe'de PyInstaller
+# bundle'i kendi çözer, ek yol enjeksiyonu hatalı path'lere yol açabilir.
+if not getattr(sys, "frozen", False):
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from PySide6.QtWidgets import QApplication
 
