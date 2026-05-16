@@ -51,12 +51,18 @@ class AccentFrame(QFrame):
         if not self._accent_color.isValid():
             return
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         color = QColor(self._accent_color)
         if self._hover_progress:
             color = color.lighter(100 + int(self._hover_progress * 25))
-        width = self._accent_width + int(self._hover_progress * 2)
-        painter.fillRect(0, 0, width, self.height(), color)
+        
+        pen = QPen(color)
+        pen.setWidth(1)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        
+        rect = self.rect().adjusted(1, 1, -1, -1)
+        painter.drawRoundedRect(rect, 12, 12)
 
     def _animate_hover(self, target: float) -> None:
         self._hover_animation.stop()
