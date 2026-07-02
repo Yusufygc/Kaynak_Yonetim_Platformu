@@ -4,6 +4,12 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-02] KALDIRMA | Fikirler (Idea) modülü projeden çıkarıldı
+
+Fikirler modülü tamamen kaldırıldı: `models/idea.py`, `repositories/idea_repo.py`, `services/idea_service.py`, `ui/views/idea_view.py`, `ui/components/idea_card.py`, `ui/components/idea_form.py` ve ilgili testler silindi. Entegrasyon noktaları temizlendi: sidebar nav item, `content_workspace.py` sayfa route'u, `main_controller.py`'deki `load_ideas`/`add_idea`/`update_idea`/`delete_idea`, `event_bus`'taki `idea_added`/`idea_updated`/`idea_deleted` sinyalleri, `resource_flow.py`'deki bağlantılar, `schemas.py`'deki `IdeaUpdateSchema`, `strings.py`/`icons.py`/`status.py`'deki idea'ya özel sabitler (`PRIORITY_LABELS` dahil — `filter_bar.py`'nin kendi ayrı `_PRIORITY_LABELS` listesi olduğu doğrulandı, dokunulmadı). Yeni Alembic revizyonu (`a7d8ff966efd_ideas_tablosunu_kaldir`) `ideas` tablosunu drop eder; gerçek kullanıcı veritabanında uygulandı (1 fikir kaydı kalıcı silindi), `resources`/`categories`/`tags` verisi değişmeden korundu. Detay: [[veritabani_migrasyonlari]]. 87/87 test yeşil (9 idea testi kaldırıldı).
+
+---
+
 ## [2026-07-02] MIGRATION | Alembic'e geçiş
 
 `utils/db_utils.py`'deki `Base.metadata.create_all()` + elle yazılmış `_LIGHTWEIGHT_MIGRATIONS` mekanizması Alembic ile değiştirildi. `pkm_app/alembic.ini` + `pkm_app/migrations/` eklendi; `env.py` modelleri import edip `target_metadata = Base.metadata` yapar, DB URL'ini `core.config.settings`'ten okur. İlk revizyon (`3997fe50be13_baseline`) autogenerate ile üretildi (7 tablo). `init_db()` üç senaryoyu ayırt eder: sıfırdan kurulum (`upgrade head`), Alembic-öncesi legacy DB (`stamp head`, şema değişmez), zaten yönetilen DB (bekleyen migration'lar uygulanır). Gerçek kullanıcı DB'sinin kopyası üzerinde doğrulandı: veri birebir korundu, orijinal dosya MD5 ile değişmedi. Detay: [[veritabani_migrasyonlari]]. `alembic>=1.13.0` bağımlılığı eklendi. 3 yeni test (`test_db_utils.py`), toplam paket 96/96 yeşil.

@@ -24,7 +24,6 @@
 | Sayfa | Özet |
 |-------|------|
 | [[core_servisler]] | Repository/Service/Controller katmanları, ResourceService.update_resource, TagService CRUD, URL regex, custom exceptions |
-| [[ideas_module]] | Bağımsız Kanban özellikli "Fikirler" modülü. Idea model, service ve UI bileşenleri. |
 
 ## Arayüz (UI)
 

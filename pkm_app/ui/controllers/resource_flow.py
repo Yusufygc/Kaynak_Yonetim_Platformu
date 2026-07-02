@@ -52,10 +52,6 @@ class ResourceFlow(QObject):
         event_bus.resource_added.connect(self._on_resource_changed)
         event_bus.resource_updated.connect(self._on_resource_changed)
         event_bus.resource_deleted.connect(self._on_resource_deleted)
-        
-        event_bus.idea_added.connect(self._on_idea_changed)
-        event_bus.idea_updated.connect(self._on_idea_changed)
-        event_bus.idea_deleted.connect(self._on_idea_changed)
 
         event_bus.error_occurred.connect(self._workspace.show_error_banner)
 
@@ -99,9 +95,6 @@ class ResourceFlow(QObject):
                 self._detail.load_resource(resource)
 
     def _on_resource_deleted(self, _resource_id: int = 0) -> None:
-        self._workspace.refresh()
-
-    def _on_idea_changed(self, _idea_id: int = 0) -> None:
         self._workspace.refresh()
 
     # ------------------------------------------------------------------ #

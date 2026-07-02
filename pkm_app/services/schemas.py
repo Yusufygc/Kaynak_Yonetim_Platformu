@@ -3,7 +3,6 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from models import ResourceStatus
-from models.idea import IdeaStatus
 
 
 class ResourceCreateSchema(BaseModel):
@@ -37,14 +36,3 @@ class ResourceUpdateSchema(BaseModel):
     is_pinned: Optional[bool] = None
     tag_names: Optional[list[str]] = None
     extra_metadata: Optional[dict] = None
-
-
-class IdeaUpdateSchema(BaseModel):
-    """IdeaService.update_idea icin kismi guncelleme."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[IdeaStatus] = None
-    priority: Optional[int] = None

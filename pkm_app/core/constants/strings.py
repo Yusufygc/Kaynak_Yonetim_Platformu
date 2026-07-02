@@ -11,12 +11,10 @@ class AppStrings:
     CATEGORIES = "Kategoriler"
     TAGS = "Etiketler"
     TOGGLE_THEME = "Tema Değiştir"
-    IDEAS = "Fikirler"
 
     # Toolbar
     SEARCH_PLACEHOLDER = "Ara..."
     ADD_NEW = "Yeni Ekle"
-    ADD_IDEA = "Yeni Fikir"
 
     # Ayarlar sayfası
     SETTINGS = "Ayarlar"
@@ -44,13 +42,6 @@ class AppStrings:
 
     # Empty state
     EMPTY_STATE_MSG = "Burada henüz bir şey yok. Yeni Ekle'ye basarak ilk kaynağınızı oluşturun."
-    EMPTY_IDEAS_MSG = "Henüz hiç fikir eklenmemiş. Yeni Fikir diyerek ilk düşüncenizi kaydedin."
-
-    # Idea Status
-    IDEA_STATUS_NEW = "Yeni"
-    IDEA_STATUS_EVALUATING = "Değerlendiriliyor"
-    IDEA_STATUS_APPROVED = "Kabul Edildi"
-    IDEA_STATUS_REJECTED = "Reddedildi"
 
     # Form — Yeni Kaynak
     FORM_HEADER = "Yeni Kaynak Ekle"

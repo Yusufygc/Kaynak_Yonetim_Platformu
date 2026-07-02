@@ -7,12 +7,10 @@ from ui.components.resource_card import ResourceCard
 from ui.views.content_view import ContentView
 from ui.views.settings_view import SettingsView
 from ui.views.url_showcase_view import UrlShowcaseView
-from ui.views.idea_view import IdeaView
 
 _PAGE_CONTENT = 0
 _PAGE_SETTINGS = 1
 _PAGE_URL_SHOWCASE = 2
-_PAGE_IDEAS = 3
 
 
 class ContentWorkspace(QWidget):
@@ -37,7 +35,6 @@ class ContentWorkspace(QWidget):
             "settings": self._show_settings,
             "url_showcase": self._show_url_showcase,
             "favorites": self._show_favorites,
-            "ideas": self._show_ideas,
         }
 
         # FilterBar sinyalleri
@@ -67,12 +64,10 @@ class ContentWorkspace(QWidget):
         self._content_view = ContentView()
         self._settings_view = SettingsView(self._controller)
         self._url_showcase = UrlShowcaseView()
-        self._idea_view = IdeaView(self._controller)
 
         self._stack.addWidget(self._content_view)    # _PAGE_CONTENT
         self._stack.addWidget(self._settings_view)   # _PAGE_SETTINGS
         self._stack.addWidget(self._url_showcase)    # _PAGE_URL_SHOWCASE
-        self._stack.addWidget(self._idea_view)       # _PAGE_IDEAS
 
         root.addWidget(self._stack)
 
@@ -105,8 +100,6 @@ class ContentWorkspace(QWidget):
             self._show_url_showcase()
         elif idx == _PAGE_SETTINGS:
             self._show_settings()
-        elif idx == _PAGE_IDEAS:
-            self._show_ideas()
         elif self._current_filter == "favorites":
             self._show_favorites()
         else:
@@ -128,10 +121,6 @@ class ContentWorkspace(QWidget):
     def _show_settings(self) -> None:
         self._stack.setCurrentIndex(_PAGE_SETTINGS)
         self._settings_view.load_all()
-
-    def _show_ideas(self) -> None:
-        self._stack.setCurrentIndex(_PAGE_IDEAS)
-        self._idea_view.load_all()
 
     def _show_url_showcase(self) -> None:
         self._stack.setCurrentIndex(_PAGE_URL_SHOWCASE)

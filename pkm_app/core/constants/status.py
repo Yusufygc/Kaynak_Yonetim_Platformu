@@ -12,14 +12,3 @@ STATUS_LABELS: dict[ResourceStatus, str] = {
 
 def status_label(status: ResourceStatus) -> str:
     return STATUS_LABELS.get(status, status.value)
-
-
-PRIORITY_LABELS: dict[int, str] = {
-    1: "Yüksek",
-    2: "Orta",
-    3: "Düşük",
-}
-
-
-def priority_label(priority: int) -> str:
-    return PRIORITY_LABELS.get(priority, str(priority))

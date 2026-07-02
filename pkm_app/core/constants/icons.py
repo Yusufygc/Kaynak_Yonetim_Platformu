@@ -11,7 +11,6 @@ class QtAwesomeIcons:
     FAVORITES = "fa5s.star"
     URL_SHOWCASE = "fa5s.globe"
     SETTINGS = "fa5s.cog"
-    IDEAS = "fa5s.lightbulb"
 
     # Arama & Input
     SEARCH = "fa5s.search"

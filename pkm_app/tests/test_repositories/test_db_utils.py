@@ -11,7 +11,6 @@ _APP_TABLES = {
     "resource_tags_link",
     "highlights",
     "vocabulary",
-    "ideas",
 }
 
 

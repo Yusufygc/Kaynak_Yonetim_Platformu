@@ -52,26 +52,3 @@ def test_toggle_pin_flips_value_and_emits_resource_updated(qapp, session):
 
         assert received == [(resource.id,)]
         assert controller.get_resource(resource.id).is_pinned is True
-
-
-def test_idea_crud_round_trip(qapp, session):
-    controller = MainController(session)
-
-    idea = controller.add_idea({"title": "Yeni fikir", "priority": 1})
-    assert idea is not None
-    assert [i.id for i in controller.load_ideas()] == [idea.id]
-
-    updated = controller.update_idea(idea.id, {"title": "Guncel fikir"})
-    assert updated.title == "Guncel fikir"
-
-    controller.delete_idea(idea.id)
-    assert controller.load_ideas() == []
-
-
-def test_add_idea_failure_emits_error_and_returns_none(qapp, session):
-    controller = MainController(session)
-    with _capture(event_bus.error_occurred) as received:
-        result = controller.add_idea({"title": ""})
-
-        assert result is None
-        assert len(received) == 1
