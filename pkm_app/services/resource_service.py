@@ -13,7 +13,6 @@ from models import Resource, ResourceStatus, Tag
 from repositories.category_repo import CategoryRepository
 from repositories.resource_repo import ResourceRepository
 from repositories.tag_repo import TagRepository
-from .scraper_service import ScraperService
 from .schemas import ResourceCreateSchema, ResourceUpdateSchema
 
 _URL_RE = re.compile(
@@ -104,7 +103,6 @@ class ResourceService:
         self._resource_repo = ResourceRepository(session)
         self._tag_repo = TagRepository(session)
         self._category_repo = CategoryRepository(session)
-        self._scraper = ScraperService()
 
     # ------------------------------------------------------------------ #
     # Okuma
@@ -168,13 +166,6 @@ class ResourceService:
         if priority not in (1, 2, 3):
             raise ValidationError("Oncelik degeri 1, 2 veya 3 olmalidir.")
 
-        extra_metadata = self._resolve_extra_metadata(
-            url=url,
-            provided=payload.extra_metadata,
-            scrape=bool(url),
-            fallback=None,
-        )
-
         initial_status = payload.status
 
         resource = Resource(
@@ -185,7 +176,7 @@ class ResourceService:
             priority=priority,
             progress=_progress_for_status(initial_status, 0.0),
             content=payload.content,
-            extra_metadata=extra_metadata,
+            extra_metadata=payload.extra_metadata,
         )
 
         # Once resource'u session'a ekle, sonra etiketleri bagla.
@@ -295,15 +286,9 @@ class ResourceService:
             raise ValidationError("Oncelik degeri 1, 2 veya 3 olmalidir.")
         resource.priority = priority
 
-    def _apply_metadata(self, resource: Resource, payload: ResourceUpdateSchema, fields: set[str]) -> None:
-        if resource.url and ("url" in fields or "extra_metadata" in fields):
-            resource.extra_metadata = self._resolve_extra_metadata(
-                url=resource.url,
-                provided=payload.extra_metadata if "extra_metadata" in fields else None,
-                scrape=True,
-                fallback=resource.extra_metadata,
-            )
-        elif "extra_metadata" in fields:
+    @staticmethod
+    def _apply_metadata(resource: Resource, payload: ResourceUpdateSchema, fields: set[str]) -> None:
+        if "extra_metadata" in fields:
             resource.extra_metadata = payload.extra_metadata
 
     def update_resource_progress(self, resource_id: int, progress: float) -> Resource:
@@ -365,29 +350,6 @@ class ResourceService:
         except Exception:
             self._session.rollback()
             raise
-
-    def _resolve_extra_metadata(
-        self,
-        *,
-        url: str | None,
-        provided: dict | None,
-        scrape: bool,
-        fallback,
-    ):
-        """add ve update arasinda paylasilan extra_metadata cozumleyici.
-
-        - url + scrape: scraper sonucu + provided dict varsa onu uzerine ezer.
-        - url yok ama provided varsa: provided dondurulur.
-        - aksi halde fallback (mevcut resource degeri ya da None).
-        """
-        if url and scrape:
-            scraped = self._scraper.extract_metadata(url)
-            if isinstance(provided, dict):
-                return {**scraped, **provided}
-            return scraped
-        if isinstance(provided, dict):
-            return provided
-        return fallback
 
     def _get_or_create_tags(self, tag_names: list[str]) -> list[Tag]:
         tags: list[Tag] = []

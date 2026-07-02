@@ -1,15 +1,37 @@
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+
 from core.events import event_bus
 from core.logger import log
+from services.scraper_service import ScraperService
 from ui.controllers.main_controller import MainController
 from ui.views.content_workspace import ContentWorkspace
 from ui.views.detail_view import DetailView
 
 
-class ResourceFlow:
+class _ScrapeWorkerSignals(QObject):
+    finished = Signal(int, dict)
+
+
+class _ScrapeWorker(QRunnable):
+    """URL metadata cikarmayi arka plan thread'inde calistirir (UI thread'i bloklamaz)."""
+
+    def __init__(self, resource_id: int, url: str) -> None:
+        super().__init__()
+        self._resource_id = resource_id
+        self._url = url
+        self.signals = _ScrapeWorkerSignals()
+
+    def run(self) -> None:
+        metadata = ScraperService().extract_metadata(self._url)
+        self.signals.finished.emit(self._resource_id, metadata)
+
+
+class ResourceFlow(QObject):
     """UI bilesenleri ve MainController arasindaki kaynak yasam dongusu koordinatoru.
 
     MainWindow ince compose'a indi; sinyal kablolama ve flow handler'lari burada.
-    UI widget degildir, sadece sinyal yonlendirir.
+    UI widget degildir ama QObject'tir: arka plan worker sinyallerinin ana thread'e
+    guvenli (kuyruklu) tasinmasi bunu gerektirir.
     """
 
     def __init__(
@@ -18,6 +40,7 @@ class ResourceFlow:
         workspace: ContentWorkspace,
         detail_view: DetailView,
     ) -> None:
+        super().__init__()
         self._controller = controller
         self._workspace = workspace
         self._detail = detail_view
@@ -115,6 +138,7 @@ class ResourceFlow:
                 self._workspace.refresh()
                 self._workspace.show_info_banner(f"'{resource.title}' eklendi.")
                 log.info("Form ile kaynak eklendi: id=%d", resource.id)
+                self._schedule_scrape(resource)
         else:
             resource = self._controller.update_resource(resource_id, data)
             if resource is not None:
@@ -122,3 +146,20 @@ class ResourceFlow:
                 self._workspace.refresh()
                 self._workspace.show_info_banner(f"'{resource.title}' guncellendi.")
                 log.info("Form ile kaynak guncellendi: id=%d", resource.id)
+                self._schedule_scrape(resource)
+
+    # ------------------------------------------------------------------ #
+    # Arka plan URL metadata cikarimi
+    # ------------------------------------------------------------------ #
+
+    def _schedule_scrape(self, resource) -> None:
+        if not resource.url:
+            return
+        worker = _ScrapeWorker(resource.id, resource.url)
+        worker.signals.finished.connect(self._on_scrape_finished)
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_scrape_finished(self, resource_id: int, metadata: dict) -> None:
+        if not metadata:
+            return
+        self._controller.update_resource(resource_id, {"extra_metadata": metadata})

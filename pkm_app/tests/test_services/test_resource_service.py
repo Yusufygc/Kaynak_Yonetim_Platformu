@@ -60,12 +60,7 @@ def test_update_resource_with_empty_tag_list_clears_tags(session):
     assert updated.tags == []
 
 
-def test_add_resource_merges_url_tag_with_manual_tags(session, monkeypatch):
-    monkeypatch.setattr(
-        "pkm_app.services.resource_service.ScraperService.extract_metadata",
-        lambda self, url: {},
-    )
-
+def test_add_resource_merges_url_tag_with_manual_tags(session):
     resource = ResourceService(session).add_new_resource(
         ResourceCreateSchema(
             title="Video",
@@ -86,12 +81,7 @@ def test_add_resource_merges_url_tag_with_manual_tags(session, monkeypatch):
         ("https://docs.python.org/3/", "python"),
     ],
 )
-def test_add_resource_derives_tags_from_url(session, monkeypatch, url, expected_tag):
-    monkeypatch.setattr(
-        "pkm_app.services.resource_service.ScraperService.extract_metadata",
-        lambda self, url: {},
-    )
-
+def test_add_resource_derives_tags_from_url(session, url, expected_tag):
     resource = ResourceService(session).add_new_resource(
         ResourceCreateSchema(title="URL", url=url)
     )
@@ -99,11 +89,7 @@ def test_add_resource_derives_tags_from_url(session, monkeypatch, url, expected_
     assert [tag.name for tag in resource.tags] == [expected_tag]
 
 
-def test_update_url_adds_new_url_tag_and_preserves_existing_tags(session, monkeypatch):
-    monkeypatch.setattr(
-        "pkm_app.services.resource_service.ScraperService.extract_metadata",
-        lambda self, url: {},
-    )
+def test_update_url_adds_new_url_tag_and_preserves_existing_tags(session):
     service = ResourceService(session)
     resource = service.add_new_resource(
         ResourceCreateSchema(
