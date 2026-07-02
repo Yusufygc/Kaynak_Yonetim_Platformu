@@ -4,6 +4,36 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-02] MIGRATION | Alembic'e geçiş
+
+`utils/db_utils.py`'deki `Base.metadata.create_all()` + elle yazılmış `_LIGHTWEIGHT_MIGRATIONS` mekanizması Alembic ile değiştirildi. `pkm_app/alembic.ini` + `pkm_app/migrations/` eklendi; `env.py` modelleri import edip `target_metadata = Base.metadata` yapar, DB URL'ini `core.config.settings`'ten okur. İlk revizyon (`3997fe50be13_baseline`) autogenerate ile üretildi (7 tablo). `init_db()` üç senaryoyu ayırt eder: sıfırdan kurulum (`upgrade head`), Alembic-öncesi legacy DB (`stamp head`, şema değişmez), zaten yönetilen DB (bekleyen migration'lar uygulanır). Gerçek kullanıcı DB'sinin kopyası üzerinde doğrulandı: veri birebir korundu, orijinal dosya MD5 ile değişmedi. Detay: [[veritabani_migrasyonlari]]. `alembic>=1.13.0` bağımlılığı eklendi. 3 yeni test (`test_db_utils.py`), toplam paket 96/96 yeşil.
+
+---
+
+## [2026-07-02] PERF | Kaynak eklerken/güncellerken URL taramasını arka plana alma
+
+`ResourceService` artık `ScraperService`'i doğrudan çağırmıyor (bağımlılık kaldırıldı, `_resolve_extra_metadata` helper'ı silindi). URL metadata çıkarımı `ResourceFlow` içinde `QThreadPool`/`QRunnable` ile arka plan thread'inde yapılıyor; sonuç güvenli (kuyruklu) Qt sinyaliyle ana thread'e taşınıp DB'ye yazılıyor. `ResourceFlow`, kuyruklu bağlantı garantisi için `QObject`'e çevrildi. Yavaş/yanıt vermeyen bir siteye kaynak eklerken arayüz artık donmuyor (`add_resource` ~16ms'de dönüyor, önceden ağ isteği bitene kadar bloklanıyordu). 3 yeni entegrasyon testi (`test_resource_flow.py`, gerçek `QThreadPool` ile).
+
+---
+
+## [2026-07-02] REFACTOR | Kaynak/fikir güncelleme akışını Pydantic şemaya taşıma
+
+`ResourceService.add_new_resource`/`update_resource` ve `IdeaService.update_idea` artık tipsiz `dict` yerine yeni `services/schemas.py` içindeki Pydantic modellerini (`extra="forbid"`) kabul ediyor. Formda yazım hatasıyla girilen alan adı artık sessizce yutulmuyor, açık `ValidationError` olarak `MainController` üzerinden kullanıcıya bildiriliyor. `update_resource()` ayrıca alan bazlı yardımcı metodlara bölündü (cyclomatic complexity düşürüldü); davranış değişmedi.
+
+---
+
+## [2026-07-02] TEST | Servis/repo/controller kapsamı genişletme + SSRF koruması
+
+`CategoryService`, `TagService`, repository katmanı (`base`/`category`/`tag`/`idea`) ve `MainController` için hiç test yoktu; validasyon, duplicate, not-found ve `event_bus` sinyal senaryoları eklendi. `ScraperService.extract_metadata` artık hedef hostname'i çözüp loopback/private/link-local adreslere istek atmıyor (SSRF koruması); mevcut scraper testleri gerçek DNS'e bağımlı kalmasın diye otomatik sahte DNS fixture'ı eklendi.
+
+---
+
+## [2026-07-02] FIX | Fikirler modülünü kaynak modülü standardına çekme
+
+`idea_service.py` artık diğer servisler gibi `log.exception` atıyor ve orijinal exception tipini koruyor (önceden her hata `ValidationError`'a sarılıp loglanmadan yutuluyordu). `idea_card.py` hardcoded HEX renkler yerine `resolve_theme_color` ile tema paletini kullanıyor. `Idea` modeli `Mapped[...]`/`func.now()`/`timezone=True` stiline taşındı (Resource ile tutarlı, önceden naive `datetime.utcnow` kullanıyordu), kullanılmayan `to_dict()` kaldırıldı. Öncelik etiketleri (`Yüksek`/`Orta`/`Düşük`) `core/constants/status.py`'de `PRIORITY_LABELS` ile merkezileştirildi. `.gitignore`'daki genel `*.md`/`docs/` kuralı yüzünden hiç commitlenmemiş olan `CLAUDE.md`/`rules.md` git takibine alındı.
+
+---
+
 ## [2026-05-17] FIX | UI layout iyileştirmeleri ve vitrin senkronizasyonu
 
 ContentView ve UrlShowcaseView içerisindeki boş durum (empty state) düzen kaymaları QStackedWidget kullanılarak çözüldü. AccentFrame (ResourceCard ve UrlRichCard tabanı) güncellendi: soldaki kalın durum çizgisi kaldırılarak yerine kategori renginde 1px'lik ince bir çerçeve eklendi ve köşeler daha yumuşak (12px) hale getirildi. Vitrin sayfasındayken kaynak silindiğinde ekranın anında güncellenmemesi sorunu, ResourceFlow'daki `is_content_active` kısıtlamasının kaldırılması ve `ContentWorkspace.refresh()` metodunun `SettingsView` yönlendirmelerini koruyacak şekilde güncellenmesiyle çözüldü.

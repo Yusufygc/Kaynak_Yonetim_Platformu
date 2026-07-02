@@ -19,7 +19,9 @@ Fikirler modülü kendi repository'sine ve tablosuna sahip olduğu için silinen
 
 ## Öncelik (Priority) ve Renkler
 
-Kartların sol şerit renkleri (AccentFrame üzerinden verilir) fikrin önceliğine göre otomatik atanır:
-- Öncelik 1 (Yüksek): Kırmızımsı (`#ef4444`)
-- Öncelik 2 (Orta): Mavimsi (`#3b82f6`)
-- Öncelik 3 (Düşük): Gri/Yeşil tonlarında varsayılan renk.
+Kartların sol şerit renkleri (AccentFrame üzerinden verilir) fikrin önceliğine göre otomatik atanır. Renkler `ui/theme_utils.resolve_theme_color()` ile aktif temadan okunur (hardcoded HEX yok, `event_bus.theme_changed`'a abone olup tema değişince yeniden boyanır):
+- Öncelik 1 (Yüksek): `Colors.DANGER`
+- Öncelik 2 (Orta): `Colors.ACCENT`
+- Öncelik 3 (Düşük) / diğer: `Colors.TEXT_SECONDARY`
+
+Metin etiketleri (`Yüksek`/`Orta`/`Düşük`) `core/constants/status.py` içindeki `PRIORITY_LABELS`/`priority_label()` üzerinden merkezi olarak yönetilir; `idea_card.py` ve `idea_form.py` bu tek kaynağı kullanır.

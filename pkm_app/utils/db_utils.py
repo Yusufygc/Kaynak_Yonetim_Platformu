@@ -1,3 +1,5 @@
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -7,9 +9,9 @@ import models.category  # noqa: F401
 import models.tag  # noqa: F401
 import models.resource  # noqa: F401
 import models.idea  # noqa: F401
-from models.base import Base
 from core.config import settings
 from core.logger import log
+from core.paths import resource_path
 
 engine = create_engine(
     settings.DATABASE_URL,
@@ -58,12 +60,33 @@ def _apply_lightweight_migrations(target: Engine) -> None:
         log.info("Migration uygulandi: %s.%s eklendi", table_name, column_name)
 
 
+def _alembic_config() -> AlembicConfig:
+    cfg = AlembicConfig(str(resource_path("alembic.ini")))
+    cfg.set_main_option("script_location", str(resource_path("migrations")))
+    cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+    return cfg
+
+
 def init_db() -> None:
-    """Tüm tablolari olusturur. Uygulama baslarken bir kez cagrilir."""
-    from models import Base  # dairesel import'tan kacmak icin
+    """Veritabani semasini Alembic ile olusturur/gunceller. Uygulama baslarken
+    bir kez cagrilir.
+
+    - Sifirdan kurulum (tablo yok): migration zinciri bastan sona calisir.
+    - Alembic-oncesi (legacy) DB (tablolar var ama alembic_version yok):
+      semaya dokunmadan mevcut durum 'head' olarak isaretlenir (stamp),
+      boylece kullanici verisi CREATE TABLE ile catismaz.
+    - Zaten Alembic ile yonetilen DB: sadece bekleyen migration'lar uygulanir.
+    """
     _apply_lightweight_migrations(engine)
-    Base.metadata.create_all(bind=engine)
-    log.info("Veritabani tablolari olusturuldu/dogrulandi.")
+
+    cfg = _alembic_config()
+    existing_tables = set(inspect(engine).get_table_names())
+    if existing_tables and "alembic_version" not in existing_tables:
+        alembic_command.stamp(cfg, "head")
+        log.info("Mevcut veritabani Alembic head olarak isaretlendi (sema degismedi).")
+
+    alembic_command.upgrade(cfg, "head")
+    log.info("Veritabani semasi guncel (Alembic head).")
 
 
 def get_session() -> Session:

@@ -17,6 +17,7 @@
 | Sayfa | Özet |
 |-------|------|
 | [[veritabani_semasi]] | Tüm tablolar (categories, tags, resources, highlights, vocabulary), alan tanımları |
+| [[veritabani_migrasyonlari]] | Alembic'e geçiş: env.py yapılandırması, init_db() fresh/legacy/managed akışı, yeni migration ekleme |
 
 ## Servisler ve İş Mantığı
 
