@@ -22,7 +22,15 @@ class _ScrapeWorker(QRunnable):
         self.signals = _ScrapeWorkerSignals()
 
     def run(self) -> None:
-        metadata = ScraperService().extract_metadata(self._url)
+        try:
+            metadata = ScraperService().extract_metadata(self._url)
+        except Exception:
+            log.exception(
+                "Arka planda URL taramasi basarisiz: id=%d url=%s",
+                self._resource_id,
+                self._url,
+            )
+            metadata = {}
         self.signals.finished.emit(self._resource_id, metadata)
 
 

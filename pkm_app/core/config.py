@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{_DB_PATH.as_posix()}"
     LOG_LEVEL: str = ""
     LOG_FILE: str = str(_LOG_PATH)
-    DEFAULT_THEME: str = "dark"
+    DEFAULT_THEME: str = "light"
 
     class Config:
         env_file = str(_ENV_FILE)

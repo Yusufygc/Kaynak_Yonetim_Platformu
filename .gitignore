@@ -60,12 +60,13 @@ ehthumbs.db
 Thumbs.db
 
 # === Dökümantasyon (commit disi) ===
-docs/
+docs/*
 !docs/wiki/
 *.md
 !README.md
 !CLAUDE.md
 !rules.md
+!docs/wiki/*.md
 
 .claude
 graphify-out

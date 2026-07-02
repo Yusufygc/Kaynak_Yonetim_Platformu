@@ -51,17 +51,19 @@
     background-color: {{surface_hover}};
 }
 
-#ThemeToggleButton {
+#HamburgerButton {
     background: transparent;
-    color: {{text_secondary}};
-    border: 1px solid {{border_color}};
-    border-radius: 8px;
-    padding: 8px;
-    text-align: left;
+    border: none;
+    border-radius: 6px;
 }
 
-#ThemeToggleButton:hover {
+#HamburgerButton:hover {
     background-color: {{surface_hover}};
-    color: {{text_primary}};
-    border-color: {{focus_ring}};
 }
+
+#ThemeToggleLabel {
+    color: {{text_secondary}};
+    font-size: 13px;
+    font-weight: 500;
+}
+

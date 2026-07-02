@@ -33,6 +33,7 @@ class ContentView(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("ContentView")
+        self._cards: list = []
         self._build_ui()
         self._connect_signals()
         event_bus.theme_changed.connect(self._on_theme_changed)
@@ -97,20 +98,27 @@ class ContentView(QFrame):
 
     def _connect_signals(self) -> None:
         self._add_btn.clicked.connect(self.add_requested)
-        self._search_bar.search_changed.connect(event_bus.search_query_changed)
-        self.filter_bar.filters_changed.connect(self.filters_changed)
+        self._search_bar.search_changed.connect(self._emit_combined_filters)
+        self.filter_bar.filters_changed.connect(self._emit_combined_filters)
+
+    def _emit_combined_filters(self, *_args) -> None:
+        filters = self.filter_bar.current_filters()
+        filters["keyword"] = self._search_bar.text().strip()
+        self.filters_changed.emit(filters)
 
     # ------------------------------------------------------------------ #
     # Kart yönetimi
     # ------------------------------------------------------------------ #
 
     def clear_cards(self) -> None:
+        self._cards.clear()
         while self._flow_layout.count():
             item = self._flow_layout.takeAt(0)
             if item and item.widget():
                 item.widget().deleteLater()
 
     def add_card(self, card: QWidget) -> None:
+        self._cards.append(card)
         self._flow_layout.addWidget(card)
 
     def show_empty_state(self, visible: bool) -> None:

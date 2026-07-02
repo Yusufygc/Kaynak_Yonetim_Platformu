@@ -2,6 +2,8 @@ from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QWidget
 
+from ui.theme_utils import to_qcolor as _to_color
+
 
 class AccentFrame(QFrame):
     """Frame with a painter-rendered left accent strip."""
@@ -164,10 +166,3 @@ class ColorSwatch(QWidget):
     def _resolve_color(self, color_hex: str) -> QColor:
         color = _to_color(color_hex)
         return color if color.isValid() else _to_color(self._fallback_color)
-
-
-def _to_color(value: str) -> QColor:
-    # Convert CSS-style #RRGGBBAA to Qt-friendly #AARRGGBB.
-    if value.startswith("#") and len(value) == 9:
-        return QColor(f"#{value[7:9]}{value[1:7]}")
-    return QColor(value)

@@ -63,6 +63,7 @@ def _alembic_config() -> AlembicConfig:
     cfg = AlembicConfig(str(resource_path("alembic.ini")))
     cfg.set_main_option("script_location", str(resource_path("migrations")))
     cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+    cfg.attributes["configure_logger"] = False
     return cfg
 
 

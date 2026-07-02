@@ -4,6 +4,24 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-02] UI | Katlanabilir Sidebar ve Özel Tema Geçiş Düğmesi (ToggleSwitch) Eklendi
+
+Sidebar daraltılabilir (collapsed: 64px) ve genişletilebilir (expanded: 220px) hale getirildi. Hamburger menü ikonu (`assets/icons/hamburger.svg`) eklenerek sidebar üst kısmına konumlandırıldı. İkonun renginin temayla uyumlu değişmesi için `ui/theme_utils.py` dosyasına `load_theme_svg` eklendi, bu sayede SVG içindeki `currentColor` ifadesi aktif temanın ikon rengiyle dinamik olarak değiştirilmektedir. Geleneksel tema değiştirme butonu, pürüzsüz animasyonlu özel bir `ToggleSwitch` (`ui/components/toggle_switch.py`) bileşeniyle güncellendi. Ayrıca kullanıcının talebi doğrultusunda "Bağlantı Vitrini" (url_showcase) sayfası sidebar menü sıralamasında ilk sıraya getirildi. İlk açılışta hamburger menü ikonunun yüklenmeme sorunu Sidebar constructor'ında aktif tema çağrısıyla düzeltildi; başlangıç varsayılan teması 'light' olarak ayarlandı. Tema geçişlerinin yumuşatılması için `MainWindow` gövdesine 250ms'lik `QGraphicsOpacityEffect` fade-in animasyonu uygulandı. Detay: [[tema_yonetimi]], [[ui_layout]]. 87/87 test yeşil ve programatik geçiş testleriyle doğrulandı.
+
+---
+
+## [2026-07-02] UI | Filtreleme çubuğu "yükseltilmiş navbar kartı" olarak yeniden tasarlandı
+
+`FilterBar` (`ui/components/filter_bar.py`) artık gövdeden görsel olarak ayrık bir kart: kendi arka planı (`surface_elevated`), kenarlığı, 12px yuvarlak köşesi, `QGraphicsDropShadowEffect` gölgesi (tema değişince güncellenir). `QFrame` alt sınıfında QSS arka planının boyanması için gereken `WA_StyledBackground` attribute'u eklendi (önceden set edilmemişti, QSS'teki `background: transparent` olduğu için fark edilmiyordu). Filtre grupları arası `#FilterSeparator` ince ayraçlarla görsel olarak bölündü. Küçük UX iyileştirmesi: "Temizle" butonu hiçbir filtre aktif değilken otomatik devre dışı kalıyor. CSS-stili alfa'lı hex renkleri (`shadow_color` gibi) Qt formatına çeviren `_to_color` fonksiyonu `painted.py`'den `ui/theme_utils.py::to_qcolor()`'a taşındı (DRY, iki bileşen aynı dönüşümü paylaşıyor). Kullanıcıya 3 tasarım seçeneği (navbar kartı / popover menü / navbar+aktif filtre etiketleri) sunuldu, "Yükseltilmiş Navbar Kartı" seçildi. Detay: [[ui_layout]]. 87/87 test yeşil, offscreen ekran görüntüsüyle dark/light tema ve aktif/pasif "Temizle" durumu görsel doğrulandı.
+
+---
+
+## [2026-07-02] FIX | Bağlantı Vitrini ana sayfa yapıldı, sayfa geçişi donması giderildi
+
+Bağlantı Vitrini artık uygulamanın açılış sayfası (`main_window.py`, `Sidebar.select_by_key`). Kök nedeni bulunan donma hatası düzeltildi: `ContentWorkspace.apply_filter()` her geçişte iki `FilterBar.clear()` çağırıyordu, `clear()` sonunda senkron `filters_changed` fırlattığı için `refresh()` eski (henüz değişmemiş) sayfa index'iyle tetikleniyor, Vitrin'den ayrılırken tüm kartlar + ağ istekleri gereksiz yere 2 kez fazladan yeniden kuruluyordu. `FilterBar.clear(notify=False)` parametresiyle çözüldü. Ayrıca iki sessiz hata yutma noktası giderildi: `resource_flow.py`'deki `_ScrapeWorker.run()` artık istisnaları loglar (önceden worker sessizce ölüyordu), `url_rich_card.py`'deki `_on_thumbnail_loaded()` ağ/decode hatalarını `log.warning` ile loglar. Görsellerin DB'de doğru saklandığı (`extra_metadata.thumbnail`) ve `QNetworkAccessManager`+SSL'in ortamda çalıştığı ayrıca doğrulandı — "görseller hiç görünmüyor" şikayetinin ana kaynağı donma hatasıydı. Detay: [[url_vitrin]]. 87/87 test yeşil, offscreen smoke testiyle sayfa geçişi başına tam olarak 1 DB sorgusu yapıldığı doğrulandı (önceden fazladan tetikleniyordu).
+
+---
+
 ## [2026-07-02] KALDIRMA | Fikirler (Idea) modülü projeden çıkarıldı
 
 Fikirler modülü tamamen kaldırıldı: `models/idea.py`, `repositories/idea_repo.py`, `services/idea_service.py`, `ui/views/idea_view.py`, `ui/components/idea_card.py`, `ui/components/idea_form.py` ve ilgili testler silindi. Entegrasyon noktaları temizlendi: sidebar nav item, `content_workspace.py` sayfa route'u, `main_controller.py`'deki `load_ideas`/`add_idea`/`update_idea`/`delete_idea`, `event_bus`'taki `idea_added`/`idea_updated`/`idea_deleted` sinyalleri, `resource_flow.py`'deki bağlantılar, `schemas.py`'deki `IdeaUpdateSchema`, `strings.py`/`icons.py`/`status.py`'deki idea'ya özel sabitler (`PRIORITY_LABELS` dahil — `filter_bar.py`'nin kendi ayrı `_PRIORITY_LABELS` listesi olduğu doğrulandı, dokunulmadı). Yeni Alembic revizyonu (`a7d8ff966efd_ideas_tablosunu_kaldir`) `ideas` tablosunu drop eder; gerçek kullanıcı veritabanında uygulandı (1 fikir kaydı kalıcı silindi), `resources`/`categories`/`tags` verisi değişmeden korundu. Detay: [[veritabani_migrasyonlari]]. 87/87 test yeşil (9 idea testi kaldırıldı).

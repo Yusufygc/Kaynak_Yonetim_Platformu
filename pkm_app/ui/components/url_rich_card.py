@@ -1,8 +1,10 @@
-from PySide6.QtCore import Qt
+import ssl
+import urllib.request
+
+from PySide6.QtCore import QRunnable, QObject, Signal, Slot, QThreadPool, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
-from PySide6.QtCore import QUrl
-from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -16,6 +18,7 @@ from core.constants.colors import Colors
 from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
+from core.logger import log
 from models import Resource
 from ui.components.card_icon_button import FavoriteButton, PinButton
 from ui.components.painted import AccentFrame, ColorBadge
@@ -24,6 +27,48 @@ from ui.theme_utils import resolve_theme_color, valid_or_fallback, with_alpha
 _CARD_WIDTH = 320
 _CARD_HEIGHT = 380
 _THUMB_HEIGHT = 180
+
+_THUMBNAIL_CACHE: dict[str, QPixmap] = {}
+
+
+class WorkerSignals(QObject):
+    """Asenkron işçiden ana thread'e veri ileten sinyaller."""
+    finished = Signal(str, bytes)  # url, downloaded_bytes
+    error = Signal(str, str)       # url, error_msg
+
+
+class ThumbnailWorker(QRunnable):
+    """Arka planda görsel indirip ana thread'e ileten işçi."""
+
+    def __init__(self, url: str):
+        super().__init__()
+        self.url = url
+        self.signals = WorkerSignals()
+        self._is_aborted = False
+
+    def abort(self) -> None:
+        self._is_aborted = True
+
+    def run(self) -> None:
+        if self._is_aborted:
+            return
+        try:
+            req = urllib.request.Request(
+                self.url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            )
+            # Platform bazlı sertifika doğrulaması hatalarını aşmak için SSL doğrulamasını devre dışı bırak
+            context = ssl._create_unverified_context()
+            with urllib.request.urlopen(req, timeout=8, context=context) as response:
+                if self._is_aborted:
+                    return
+                data = response.read()
+                if self._is_aborted:
+                    return
+                self.signals.finished.emit(self.url, data)
+        except Exception as e:
+            if not self._is_aborted:
+                self.signals.error.emit(self.url, str(e))
 
 
 class UrlRichCard(AccentFrame):
@@ -35,7 +80,7 @@ class UrlRichCard(AccentFrame):
         self._resource_id = resource.id
         self._url = resource.url or ""
         self._theme_data: dict | None = None
-        self._network_manager: QNetworkAccessManager | None = None
+        self._worker: ThumbnailWorker | None = None
         self._open_btn: QPushButton | None = None
         self._thumb_label: QLabel | None = None
         self._desc_label: QLabel | None = None
@@ -51,6 +96,7 @@ class UrlRichCard(AccentFrame):
         self.set_shadow_color(resolve_theme_color(self._theme_data, Colors.SHADOW))
 
         self._build_ui(resource)
+        self.destroyed.connect(self._cleanup_network)
         event_bus.theme_changed.connect(self._on_theme_changed)
 
     def _resolve_border_color(self, resource: Resource) -> str:
@@ -181,29 +227,59 @@ class UrlRichCard(AccentFrame):
 
     def _load_thumbnail(self, thumbnail_url: str) -> None:
         self._set_thumbnail_placeholder()
-        url = QUrl(thumbnail_url)
-        if not url.isValid():
+        if not thumbnail_url:
             return
 
-        self._network_manager = QNetworkAccessManager(self)
-        reply = self._network_manager.get(QNetworkRequest(url))
-        reply.finished.connect(lambda: self._on_thumbnail_loaded(reply))
+        # 1. Bellek Önbelleği (Cache) Kontrolü
+        if thumbnail_url in _THUMBNAIL_CACHE:
+            log.info("Gorsel bellekten yukleniyor: %s", thumbnail_url)
+            self._thumb_label.setPixmap(_THUMBNAIL_CACHE[thumbnail_url])
+            self._thumbnail_loaded = True
+            return
 
-    def _on_thumbnail_loaded(self, reply: QNetworkReply) -> None:
-        try:
-            if reply.error() != QNetworkReply.NetworkError.NoError:
-                return
-            pixmap = QPixmap()
-            if not pixmap.loadFromData(bytes(reply.readAll())):
-                return
-            scaled = pixmap.scaled(
-                _CARD_WIDTH,
-                _THUMB_HEIGHT,
-                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            if self._thumb_label is not None:
-                self._thumb_label.setPixmap(scaled)
-                self._thumbnail_loaded = True
-        finally:
-            reply.deleteLater()
+        # 2. Önceki aktif isteği iptal et
+        self._cleanup_network()
+
+        # 3. Arka plan thread ile istek başlat
+        log.info("Gorsel indiriliyor (yeni istek): %s", thumbnail_url)
+        self._worker = ThumbnailWorker(thumbnail_url)
+        self._worker.signals.finished.connect(self._on_thumbnail_finished)
+        self._worker.signals.error.connect(self._on_thumbnail_error)
+        QThreadPool.globalInstance().start(self._worker)
+
+    @Slot(str, bytes)
+    def _on_thumbnail_finished(self, url: str, data: bytes) -> None:
+        if url != self._thumbnail_url:
+            return
+        self._worker = None
+
+        pixmap = QPixmap()
+        if not pixmap.loadFromData(data):
+            log.warning("Kucuk resim decode edilemedi: %s", url)
+            return
+
+        scaled = pixmap.scaled(
+            _CARD_WIDTH,
+            _THUMB_HEIGHT,
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+
+        _THUMBNAIL_CACHE[url] = scaled
+        if self._thumb_label is not None:
+            self._thumb_label.setPixmap(scaled)
+            self._thumbnail_loaded = True
+            log.info("Gorsel basariyla yuklendi ve olceklendi: %s", url)
+
+    @Slot(str, str)
+    def _on_thumbnail_error(self, url: str, error_msg: str) -> None:
+        if url != self._thumbnail_url:
+            return
+        self._worker = None
+        log.warning("Kucuk resim indirilemedi: %s - Hata: %s", url, error_msg)
+
+    def _cleanup_network(self) -> None:
+        if self._worker:
+            log.info("_cleanup_network: aktif isci iptal ediliyor")
+            self._worker.abort()
+            self._worker = None

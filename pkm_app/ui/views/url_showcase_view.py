@@ -21,6 +21,7 @@ class UrlShowcaseView(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("UrlShowcaseView")
+        self._cards: list = []
         self._build_ui()
         self.filter_bar.filters_changed.connect(self.filters_changed)
 
@@ -57,6 +58,8 @@ class UrlShowcaseView(QFrame):
     def load_resources(self, resources: list) -> None:
         from ui.components.url_rich_card import UrlRichCard
 
+        # Eski kart referanslarını temizle ve sil
+        self._cards.clear()
         while self._flow.count():
             item = self._flow.takeAt(0)
             if item and item.widget():
@@ -69,4 +72,6 @@ class UrlShowcaseView(QFrame):
 
         self._content_stack.setCurrentIndex(0)
         for resource in url_resources:
-            self._flow.addWidget(UrlRichCard(resource))
+            card = UrlRichCard(resource)
+            self._cards.append(card)
+            self._flow.addWidget(card)

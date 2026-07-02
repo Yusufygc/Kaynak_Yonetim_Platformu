@@ -1,7 +1,15 @@
 /* filters.qss — FilterBar bilesenleri */
 
 #FilterBar {
-    background: transparent;
+    background-color: {{surface_elevated}};
+    border: 1px solid {{border_color}};
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+
+#FilterSeparator {
+    background-color: {{border_color}};
+    border: none;
 }
 
 #FilterLabel {
@@ -69,6 +77,10 @@
 
 #FilterClearButton:hover {
     color: {{danger_color}};
+}
+
+#FilterClearButton:disabled {
+    color: {{border_color}};
 }
 
 /* Kart uzerindeki pin/favori ikon butonlari */

@@ -3,6 +3,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -22,7 +23,7 @@ from core.constants.status import status_label
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from models import ResourceStatus
-from ui.theme_utils import resolve_theme_color
+from ui.theme_utils import resolve_theme_color, to_qcolor
 
 
 _PRIORITY_LABELS = [
@@ -61,13 +62,21 @@ class FilterBar(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("FilterBar")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._categories: list = []
         self._tags: list = []
         self._status_chips: dict[ResourceStatus, _ToggleChip] = {}
         self._priority_chips: dict[int, _ToggleChip] = {}
         self._suppress_emit = False
 
+        self._shadow_effect = QGraphicsDropShadowEffect(self)
+        self._shadow_effect.setBlurRadius(20)
+        self._shadow_effect.setOffset(0, 3)
+        self._shadow_effect.setColor(to_qcolor(resolve_theme_color(None, Colors.SHADOW)))
+        self.setGraphicsEffect(self._shadow_effect)
+
         self._build_ui()
+        self._update_clear_button_state()
         event_bus.theme_changed.connect(self._on_theme_changed)
 
     # ------------------------------------------------------------------ #
@@ -87,6 +96,8 @@ class FilterBar(QFrame):
         self._category_combo.currentIndexChanged.connect(self._emit_filters)
         layout.addWidget(self._category_combo)
 
+        layout.addWidget(self._separator())
+
         # --- Etiket multi-select dropdown ---
         layout.addWidget(self._label(AppStrings.FILTER_TAG))
         self._tag_button = QToolButton()
@@ -105,6 +116,8 @@ class FilterBar(QFrame):
         self._tag_button.setMenu(self._tag_menu)
         layout.addWidget(self._tag_button)
 
+        layout.addWidget(self._separator())
+
         # --- Durum chip'leri ---
         layout.addWidget(self._label(AppStrings.FILTER_STATUS))
         for status in ResourceStatus:
@@ -113,6 +126,8 @@ class FilterBar(QFrame):
             self._status_chips[status] = chip
             layout.addWidget(chip)
 
+        layout.addWidget(self._separator())
+
         # --- Oncelik chip'leri ---
         layout.addWidget(self._label(AppStrings.FILTER_PRIORITY))
         for value, label in _PRIORITY_LABELS:
@@ -120,6 +135,12 @@ class FilterBar(QFrame):
             chip.toggled.connect(self._emit_filters)
             self._priority_chips[value] = chip
             layout.addWidget(chip)
+
+        # --- Favoriler ---
+        layout.addWidget(self._separator())
+        self._favorite_chip = _ToggleChip(AppStrings.FAVORITES)
+        self._favorite_chip.toggled.connect(self._emit_filters)
+        layout.addWidget(self._favorite_chip)
 
         layout.addStretch(1)
 
@@ -138,6 +159,13 @@ class FilterBar(QFrame):
         lbl.setObjectName("FilterLabel")
         return lbl
 
+    @staticmethod
+    def _separator() -> QFrame:
+        line = QFrame()
+        line.setObjectName("FilterSeparator")
+        line.setFixedWidth(1)
+        return line
+
     def _refresh_clear_icon(self) -> None:
         color = resolve_theme_color(None, Colors.ICON)
         self._clear_btn.setIcon(qta.icon(QtAwesomeIcons.FILTER_CLEAR, color=color))
@@ -145,6 +173,7 @@ class FilterBar(QFrame):
     def _on_theme_changed(self, theme_data: dict) -> None:
         color = resolve_theme_color(theme_data, Colors.ICON)
         self._clear_btn.setIcon(qta.icon(QtAwesomeIcons.FILTER_CLEAR, color=color))
+        self._shadow_effect.setColor(to_qcolor(resolve_theme_color(theme_data, Colors.SHADOW)))
 
     # ------------------------------------------------------------------ #
     # Public API
@@ -161,6 +190,7 @@ class FilterBar(QFrame):
         idx = self._category_combo.findData(current)
         self._category_combo.setCurrentIndex(idx if idx >= 0 else 0)
         self._suppress_emit = False
+        self._update_clear_button_state()
 
     def set_tags(self, tags: list) -> None:
         self._tags = list(tags)
@@ -177,6 +207,7 @@ class FilterBar(QFrame):
             self._tag_list.addItem(item)
         self._suppress_emit = False
         self._refresh_tag_button_text()
+        self._update_clear_button_state()
 
     def current_filters(self) -> dict:
         return {
@@ -184,9 +215,10 @@ class FilterBar(QFrame):
             "tag_ids": self._selected_tag_ids(),
             "statuses": [s for s, chip in self._status_chips.items() if chip.isChecked()],
             "priorities": [p for p, chip in self._priority_chips.items() if chip.isChecked()],
+            "favorites_only": getattr(self, "_favorite_chip", None) is not None and self._favorite_chip.isChecked(),
         }
 
-    def clear(self) -> None:
+    def clear(self, notify: bool = True) -> None:
         self._suppress_emit = True
         self._category_combo.setCurrentIndex(0)
         for i in range(self._tag_list.count()):
@@ -195,9 +227,13 @@ class FilterBar(QFrame):
             chip.setChecked(False)
         for chip in self._priority_chips.values():
             chip.setChecked(False)
+        if getattr(self, "_favorite_chip", None):
+            self._favorite_chip.setChecked(False)
         self._suppress_emit = False
         self._refresh_tag_button_text()
-        self._emit_filters()
+        self._update_clear_button_state()
+        if notify:
+            self._emit_filters()
 
     # ------------------------------------------------------------------ #
     # Slot'lar
@@ -224,4 +260,16 @@ class FilterBar(QFrame):
     def _emit_filters(self, *_args) -> None:
         if self._suppress_emit:
             return
+        self._update_clear_button_state()
         self.filters_changed.emit(self.current_filters())
+
+    def _update_clear_button_state(self) -> None:
+        filters = self.current_filters()
+        has_active = bool(
+            filters.get("category_id")
+            or filters.get("tag_ids")
+            or filters.get("statuses")
+            or filters.get("priorities")
+            or filters.get("favorites_only")
+        )
+        self._clear_btn.setEnabled(has_active)

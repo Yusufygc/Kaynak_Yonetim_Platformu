@@ -1,7 +1,8 @@
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QSplitter, QWidget
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
+from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QSplitter, QWidget, QGraphicsOpacityEffect
 
 from core.constants.strings import AppStrings
+from core.events import event_bus
 from ui.components.sidebar import Sidebar
 from ui.controllers.resource_flow import ResourceFlow
 from ui.views.content_workspace import ContentWorkspace
@@ -30,7 +31,11 @@ class MainWindow(QMainWindow):
         self._flow = ResourceFlow(controller, self._workspace, self._detail_view)
         self._flow.wire()
 
-        self._workspace.apply_filter("all")
+        self._sidebar.select_by_key("url_showcase")
+        self._workspace.apply_filter("url_showcase")
+
+        # Tema degisiminde yumusak gecis saglayan fade-in animasyonu
+        event_bus.theme_changed.connect(self._on_theme_changed_fade)
 
     def _build_ui(self) -> None:
         central = QWidget()
@@ -51,3 +56,22 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(1, 1)
 
         root_layout.addWidget(splitter, stretch=1)
+
+    def _on_theme_changed_fade(self, theme_data: dict) -> None:
+        central = self.centralWidget()
+        if not central:
+            return
+            
+        self._opacity_effect = QGraphicsOpacityEffect(central)
+        central.setGraphicsEffect(self._opacity_effect)
+        
+        self._fade_anim = QPropertyAnimation(self._opacity_effect, b"opacity")
+        self._fade_anim.setDuration(250)  # 250ms yumusak gecis suresi
+        self._fade_anim.setStartValue(0.65)  # Solukluk baslangici
+        self._fade_anim.setEndValue(1.0)
+        self._fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        
+        # Animasyon bitince performans acisindan efekti temizle
+        self._fade_anim.finished.connect(lambda: central.setGraphicsEffect(None))
+        self._fade_anim.start()
+

@@ -78,18 +78,15 @@ class ContentWorkspace(QWidget):
     # ------------------------------------------------------------------ #
 
     def apply_filter(self, filter_key: str) -> None:
-        # Sidebar geçişi yeni bağlam → FilterBar resetle.
+        # Sidebar geçişi yeni bağlam → FilterBar ve SearchBar resetle.
         self._active_filters = {}
-        self._content_view.filter_bar.clear()
-        self._url_showcase.filter_bar.clear()
+        self._content_view.filter_bar.clear(notify=False)
+        self._url_showcase.filter_bar.clear(notify=False)
+        self._content_view._search_bar.clear()
 
         handler = self._dispatch.get(filter_key)
         if handler is not None:
             handler()
-            return
-
-        if filter_key.startswith("search:"):
-            self._show_search(filter_key[len("search:"):])
             return
 
         self._show_content(filter_key)
@@ -132,12 +129,6 @@ class ContentWorkspace(QWidget):
         self._current_filter = "favorites"
         self._stack.setCurrentIndex(_PAGE_CONTENT)
         filters = {**self._active_filters, "favorites_only": True}
-        resources = self._controller.load_resources_with_filters(filters)
-        self._render_resources(resources)
-
-    def _show_search(self, keyword: str) -> None:
-        self._stack.setCurrentIndex(_PAGE_CONTENT)
-        filters = {**self._active_filters, "keyword": keyword}
         resources = self._controller.load_resources_with_filters(filters)
         self._render_resources(resources)
 

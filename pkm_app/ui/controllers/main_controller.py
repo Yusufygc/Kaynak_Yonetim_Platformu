@@ -21,7 +21,7 @@ class MainController:
         self._connect_events()
 
     def _connect_events(self) -> None:
-        event_bus.search_query_changed.connect(self._on_search)
+        pass
 
     # ------------------------------------------------------------------ #
     # Kaynak islemleri
@@ -188,5 +188,3 @@ class MainController:
     # Slot'lar
     # ------------------------------------------------------------------ #
 
-    def _on_search(self, keyword: str) -> None:
-        event_bus.sidebar_filter_changed.emit(f"search:{keyword}")

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 class AppStrings:
-    APP_TITLE = "PKM - Kişisel Bilgi Yöneticisi"
+    APP_TITLE = "Kişisel Bilgi Yöneticisi"
 
     # Sidebar
     ALL_RESOURCES = "Tüm Kaynaklar"
