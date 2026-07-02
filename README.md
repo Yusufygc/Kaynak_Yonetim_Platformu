@@ -72,7 +72,7 @@ Uygulamayı kendi ortamınızda çalıştırmak için aşağıdaki adımları iz
 
 1. **Repoyu Klonlayın:**
    ```bash
-   git clone https://github.com/kullanici_adiniz/Kaynak_Yonetim_Platformu.git
+   git clone https://github.com/Yusufygc/Kaynak_Yonetim_Platformu.git
    cd Kaynak_Yonetim_Platformu
    ```
 
@@ -88,17 +88,14 @@ Uygulamayı kendi ortamınızda çalıştırmak için aşağıdaki adımları iz
    ```
 
 3. **Bağımlılıkları Yükleyin:**
-   *(Eğer projenizde requirements.txt varsa bu adımı uygulayın)*
    ```bash
    pip install -r requirements.txt
    ```
-   *(Eğer pyproject.toml / poetry vb. kullanıyorsanız ilgili paketi kullanarak yükleyin.)*
 
 4. **Uygulamayı Başlatın:**
    ```bash
-   python main.py
+   python pkm_app/main.py
    ```
-   *(Eğer ana dosya `main.py` veya `run.py` ise komutu ona göre güncelleyin)*
 
 ---
 

@@ -9,8 +9,18 @@ from PySide6.QtWidgets import (
 
 # pyrefly: ignore [missing-import]
 import qtawesome as qta
+from core.constants.colors import Colors
+from core.constants.status import priority_label
+from core.events import event_bus
 from models.idea import Idea, IdeaStatus
 from ui.components.painted import AccentFrame
+from ui.theme_utils import resolve_theme_color
+
+_PRIORITY_COLOR_KEYS = {
+    1: Colors.DANGER,
+    2: Colors.ACCENT,
+}
+
 
 class IdeaCard(AccentFrame):
     """Kanban panosunda fikirleri gosteren kart."""
@@ -21,20 +31,26 @@ class IdeaCard(AccentFrame):
     edit_requested = Signal(int)
 
     def __init__(self, idea: Idea, parent: QWidget | None = None) -> None:
-        # Öncelik rengini belirle (accent_color icin)
-        # 1: High (Kırmızımsı), 2: Medium (Sarımsı/Mavi), 3: Low (Gri/Yesil)
-        accent_color = "#94a3b8"  # Default gray
-        if idea.priority == 1:
-            accent_color = "#ef4444"  # Red
-        elif idea.priority == 2:
-            accent_color = "#3b82f6"  # Blue
-            
         super().__init__(parent=parent)
-        self.set_accent_color(accent_color)
-        self.setObjectName("IdeaCard")
         self._idea = idea
+        self._theme_data: dict | None = None
+        self.set_accent_color(self._priority_color())
+        self.setObjectName("IdeaCard")
         self.setMinimumHeight(100)
         self._build_ui()
+        event_bus.theme_changed.connect(self._on_theme_changed)
+
+    def _priority_color(self) -> str:
+        key = _PRIORITY_COLOR_KEYS.get(self._idea.priority, Colors.TEXT_SECONDARY)
+        return resolve_theme_color(self._theme_data, key)
+
+    def _on_theme_changed(self, theme_data: dict) -> None:
+        self._theme_data = theme_data
+        self.set_accent_color(self._priority_color())
+        self._delete_btn.setIcon(
+            qta.icon("fa5s.trash-alt", color=resolve_theme_color(self._theme_data, Colors.DANGER))
+        )
+        self.update()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -48,8 +64,7 @@ class IdeaCard(AccentFrame):
         title_lbl.setWordWrap(True)
         # Baslik fontunu ResourceCard ile uyumlu yapalim (QSS ile yapilabilir)
         
-        pri_str = "Yüksek" if self._idea.priority == 1 else "Orta" if self._idea.priority == 2 else "Düşük"
-        pri_lbl = QLabel(pri_str)
+        pri_lbl = QLabel(priority_label(self._idea.priority))
         pri_lbl.setObjectName("IdeaPriorityBadge")
         
         top_layout.addWidget(title_lbl, stretch=1)
@@ -96,7 +111,9 @@ class IdeaCard(AccentFrame):
 
         # Sil
         self._delete_btn = QPushButton()
-        self._delete_btn.setIcon(qta.icon("fa5s.trash-alt", color="#ef4444"))
+        self._delete_btn.setIcon(
+            qta.icon("fa5s.trash-alt", color=resolve_theme_color(self._theme_data, Colors.DANGER))
+        )
         self._delete_btn.setToolTip("Sil")
         self._delete_btn.setFixedSize(24, 24)
         self._delete_btn.setObjectName("IconButton")

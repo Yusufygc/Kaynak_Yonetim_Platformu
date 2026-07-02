@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from core.constants.status import PRIORITY_LABELS
 from core.constants.strings import AppStrings
 
 class IdeaForm(QFrame):
@@ -41,9 +42,8 @@ class IdeaForm(QFrame):
 
         # Priority
         self._priority_combo = QComboBox()
-        self._priority_combo.addItem("Yüksek", 1)
-        self._priority_combo.addItem("Orta", 2)
-        self._priority_combo.addItem("Düşük", 3)
+        for value, label in PRIORITY_LABELS.items():
+            self._priority_combo.addItem(label, value)
         self._priority_combo.setCurrentIndex(1)  # Default: Orta
         layout.addWidget(QLabel("Öncelik:"))
         layout.addWidget(self._priority_combo)

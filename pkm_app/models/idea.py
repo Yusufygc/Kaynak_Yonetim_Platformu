@@ -1,7 +1,11 @@
-from datetime import datetime
 import enum
-from sqlalchemy import Column, Integer, String, Text, DateTime, Enum as SQLEnum
+from datetime import datetime
+
+from sqlalchemy import DateTime, Enum as SQLEnum, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
 from .base import Base
+
 
 class IdeaStatus(str, enum.Enum):
     NEW = "NEW"
@@ -9,24 +13,20 @@ class IdeaStatus(str, enum.Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
 
+
 class Idea(Base):
     __tablename__ = "ideas"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)
-    status = Column(SQLEnum(IdeaStatus), default=IdeaStatus.NEW, nullable=False)
-    priority = Column(Integer, default=2, nullable=False)  # 1: High, 2: Medium, 3: Low
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
-    def to_dict(self) -> dict:
-        return {
-            "id": self.id,
-            "title": self.title,
-            "description": self.description,
-            "status": self.status,
-            "priority": self.priority,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-        }
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[IdeaStatus] = mapped_column(
+        SQLEnum(IdeaStatus), nullable=False, default=IdeaStatus.NEW
+    )
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=2)  # 1: Yuksek, 2: Orta, 3: Dusuk
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now()
+    )

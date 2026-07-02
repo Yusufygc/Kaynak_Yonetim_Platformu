@@ -4,6 +4,7 @@ from repositories.idea_repo import IdeaRepository
 from sqlalchemy.orm import Session
 from core.events import event_bus
 from core.exceptions import ValidationError
+from core.logger import log
 
 class IdeaService:
     def __init__(self, session: Session) -> None:
@@ -31,9 +32,10 @@ class IdeaService:
             self._session.commit()
             event_bus.idea_added.emit(idea.id)
             return idea
-        except Exception as e:
+        except Exception:
             self._session.rollback()
-            raise ValidationError(f"Fikir kaydedilirken hata oluştu: {str(e)}")
+            log.exception("Fikir kaydedilirken hata olustu.")
+            raise
 
     def update_idea(self, idea_id: int, updates: dict) -> Idea:
         idea = self._repo.get_by_id(idea_id)
@@ -59,9 +61,10 @@ class IdeaService:
             self._session.commit()
             event_bus.idea_updated.emit(idea.id)
             return idea
-        except Exception as e:
+        except Exception:
             self._session.rollback()
-            raise ValidationError(f"Fikir güncellenirken hata oluştu: {str(e)}")
+            log.exception("Fikir guncellenirken hata olustu.")
+            raise
 
     def delete_idea(self, idea_id: int) -> None:
         idea = self._repo.get_by_id(idea_id)
@@ -72,6 +75,7 @@ class IdeaService:
             self._repo.delete(idea.id)
             self._session.commit()
             event_bus.idea_deleted.emit(idea_id)
-        except Exception as e:
+        except Exception:
             self._session.rollback()
-            raise ValidationError(f"Fikir silinirken hata oluştu: {str(e)}")
+            log.exception("Fikir silinirken hata olustu.")
+            raise
