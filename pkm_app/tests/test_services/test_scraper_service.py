@@ -1,6 +1,21 @@
+import socket
+
+import pytest
 import requests
 
 from pkm_app.services.scraper_service import ScraperService
+
+
+@pytest.fixture(autouse=True)
+def _fake_dns(monkeypatch):
+    """DNS cozumlemesini sahteler: testler gercek ag/DNS'e bagimli olmasin."""
+
+    def _fake_getaddrinfo(host, *args, **kwargs):
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
+
+    monkeypatch.setattr(
+        "pkm_app.services.scraper_service.socket.getaddrinfo", _fake_getaddrinfo
+    )
 
 
 class _Response:
@@ -97,3 +112,38 @@ def test_extract_metadata_returns_empty_dict_for_html_without_metadata(monkeypat
     )
 
     assert ScraperService().extract_metadata("https://example.com") == {}
+
+
+def _refuse_network_call(*args, **kwargs):
+    raise AssertionError("requests.get cagrilmamali - SSRF korumasi engellemeliydi")
+
+
+@pytest.mark.parametrize(
+    ("resolved_ip",),
+    [
+        ("127.0.0.1",),  # loopback
+        ("10.0.0.5",),  # private
+        ("169.254.169.254",),  # link-local (bulut metadata servisi)
+    ],
+)
+def test_extract_metadata_blocks_internal_addresses(monkeypatch, resolved_ip):
+    monkeypatch.setattr("pkm_app.services.scraper_service.requests.get", _refuse_network_call)
+    monkeypatch.setattr(
+        "pkm_app.services.scraper_service.socket.getaddrinfo",
+        lambda host, *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (resolved_ip, 0))],
+    )
+
+    assert ScraperService().extract_metadata("http://internal.example/") == {}
+
+
+def test_extract_metadata_blocks_when_dns_resolution_fails(monkeypatch):
+    monkeypatch.setattr("pkm_app.services.scraper_service.requests.get", _refuse_network_call)
+
+    def _raise_gaierror(host, *args, **kwargs):
+        raise socket.gaierror("cozumlenemedi")
+
+    monkeypatch.setattr(
+        "pkm_app.services.scraper_service.socket.getaddrinfo", _raise_gaierror
+    )
+
+    assert ScraperService().extract_metadata("http://does-not-resolve.invalid/") == {}

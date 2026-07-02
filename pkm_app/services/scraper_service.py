@@ -1,3 +1,5 @@
+import ipaddress
+import socket
 from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
@@ -19,6 +21,10 @@ class ScraperService:
     }
 
     def extract_metadata(self, url: str) -> dict:
+        if self._is_blocked_host(url):
+            log.warning("URL ic ag/loopback adresine cozumlendigi icin reddedildi: %s", url)
+            return self._platform_fallback(url)
+
         try:
             response = requests.get(
                 url,
@@ -97,6 +103,22 @@ class ScraperService:
             return None
         href = tag.get("href")
         return href.strip() if isinstance(href, str) and href.strip() else None
+
+    @staticmethod
+    def _is_blocked_host(url: str) -> bool:
+        """Ic ag / loopback / link-local adreslere istek atilmasini engeller (SSRF)."""
+        hostname = urlparse(url).hostname
+        if not hostname:
+            return True
+        try:
+            addresses = {info[4][0] for info in socket.getaddrinfo(hostname, None)}
+        except socket.gaierror:
+            return True
+        for address in addresses:
+            ip = ipaddress.ip_address(address)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                return True
+        return False
 
     @staticmethod
     def _absolute(value: str | None, base_url: str) -> str | None:
