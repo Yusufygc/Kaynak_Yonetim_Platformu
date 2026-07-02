@@ -7,6 +7,7 @@ from services.category_service import CategoryService
 from services.resource_service import ResourceService
 from services.tag_service import TagService
 from services.idea_service import IdeaService
+from services.schemas import IdeaUpdateSchema, ResourceCreateSchema, ResourceUpdateSchema
 
 
 class MainController:
@@ -59,7 +60,8 @@ class MainController:
 
     def add_resource(self, data: dict) -> Resource | None:
         try:
-            resource = self._resource_svc.add_new_resource(data)
+            payload = ResourceCreateSchema(**data)
+            resource = self._resource_svc.add_new_resource(payload)
             event_bus.resource_added.emit(resource.id)
             return resource
         except Exception as exc:
@@ -74,7 +76,8 @@ class MainController:
 
     def update_resource(self, resource_id: int, data: dict) -> Resource | None:
         try:
-            resource = self._resource_svc.update_resource(resource_id, data)
+            payload = ResourceUpdateSchema(**data)
+            resource = self._resource_svc.update_resource(resource_id, payload)
             event_bus.resource_updated.emit(resource_id)
             return resource
         except Exception as exc:
@@ -206,7 +209,8 @@ class MainController:
 
     def update_idea(self, idea_id: int, updates: dict):
         try:
-            return self._idea_svc.update_idea(idea_id, updates)
+            payload = IdeaUpdateSchema(**updates)
+            return self._idea_svc.update_idea(idea_id, payload)
         except Exception as e:
             event_bus.error_occurred.emit(str(e))
             return None

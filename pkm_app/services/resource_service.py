@@ -14,6 +14,7 @@ from repositories.category_repo import CategoryRepository
 from repositories.resource_repo import ResourceRepository
 from repositories.tag_repo import TagRepository
 from .scraper_service import ScraperService
+from .schemas import ResourceCreateSchema, ResourceUpdateSchema
 
 _URL_RE = re.compile(
     r"^https?://"
@@ -148,40 +149,33 @@ class ResourceService:
     # Yazma
     # ------------------------------------------------------------------ #
 
-    def add_new_resource(self, data: dict) -> Resource:
-        """
-        Beklenen data anahtarlari:
-          title (str, zorunlu), url (str, opsiyonel),
-          category_id (int, opsiyonel), status (ResourceStatus, opsiyonel),
-          priority (int, opsiyonel), content (str, opsiyonel),
-          tag_names (list[str], opsiyonel), extra_metadata (dict, opsiyonel)
-        """
-        title = (data.get("title") or "").strip()
+    def add_new_resource(self, payload: ResourceCreateSchema) -> Resource:
+        title = payload.title.strip()
         if not title:
             raise ValidationError("Baslik bos olamaz.")
 
-        url = data.get("url")
+        url = payload.url
         if url:
             url = url.strip()
             _validate_url(url)
 
-        category_id = data.get("category_id")
+        category_id = payload.category_id
         if category_id is not None:
             if self._category_repo.get_by_id(category_id) is None:
                 raise ResourceNotFoundError(f"Kategori bulunamadi: id={category_id}")
 
-        priority = int(data.get("priority", 2))
+        priority = payload.priority
         if priority not in (1, 2, 3):
             raise ValidationError("Oncelik degeri 1, 2 veya 3 olmalidir.")
 
         extra_metadata = self._resolve_extra_metadata(
             url=url,
-            provided=data.get("extra_metadata"),
+            provided=payload.extra_metadata,
             scrape=bool(url),
             fallback=None,
         )
 
-        initial_status = data.get("status", ResourceStatus.PLANNED)
+        initial_status = payload.status
 
         resource = Resource(
             title=title,
@@ -190,7 +184,7 @@ class ResourceService:
             status=initial_status,
             priority=priority,
             progress=_progress_for_status(initial_status, 0.0),
-            content=data.get("content"),
+            content=payload.content,
             extra_metadata=extra_metadata,
         )
 
@@ -201,7 +195,7 @@ class ResourceService:
             self._session.flush()  # ID atanir, iliski tablosu hazir olur
 
             resource.tags = self._get_or_create_tags(
-                _merge_tag_names(data.get("tag_names", []), url)
+                _merge_tag_names(payload.tag_names, url)
             )
 
             self._session.commit()
@@ -213,66 +207,28 @@ class ResourceService:
 
         return resource
 
-    def update_resource(self, resource_id: int, data: dict) -> Resource:
+    def update_resource(self, resource_id: int, payload: ResourceUpdateSchema) -> Resource:
         resource = self.get_by_id(resource_id)
+        fields = payload.model_fields_set
 
-        if "title" in data:
-            title = data["title"].strip()
-            if not title:
-                raise ValidationError("Baslik bos olamaz.")
-            resource.title = title
+        self._apply_title(resource, payload, fields)
+        self._apply_url(resource, payload, fields)
+        self._apply_category(resource, payload, fields)
+        self._apply_status_and_progress(resource, payload, fields)
+        self._apply_priority(resource, payload, fields)
 
-        if "url" in data:
-            url = (data["url"] or "").strip()
-            if url:
-                _validate_url(url)
-            resource.url = url or None
+        if "content" in fields:
+            resource.content = payload.content
+        if "is_pinned" in fields:
+            resource.is_pinned = bool(payload.is_pinned)
 
-        if "category_id" in data:
-            cat_id = data["category_id"]
-            if cat_id is not None and self._category_repo.get_by_id(cat_id) is None:
-                raise ResourceNotFoundError(f"Kategori bulunamadi: id={cat_id}")
-            resource.category_id = cat_id
-
-        if "status" in data:
-            resource.status = data["status"]
-            if "progress" not in data:
-                resource.progress = _progress_for_status(resource.status, resource.progress)
-
-        if "progress" in data:
-            progress = float(data["progress"])
-            if not (0.0 <= progress <= 100.0):
-                raise ValueError("Ilerleme degeri 0-100 arasinda olmalidir.")
-            resource.progress = progress
-            resource.status = _status_for_progress(progress)
-
-        if "priority" in data:
-            priority = int(data["priority"])
-            if priority not in (1, 2, 3):
-                raise ValidationError("Oncelik degeri 1, 2 veya 3 olmalidir.")
-            resource.priority = priority
-
-        if "content" in data:
-            resource.content = data["content"]
-
-        if "is_pinned" in data:
-            resource.is_pinned = bool(data["is_pinned"])
-
-        if resource.url and ("url" in data or "extra_metadata" in data):
-            resource.extra_metadata = self._resolve_extra_metadata(
-                url=resource.url,
-                provided=data.get("extra_metadata"),
-                scrape=True,
-                fallback=resource.extra_metadata,
-            )
-        elif "extra_metadata" in data:
-            resource.extra_metadata = data["extra_metadata"]
+        self._apply_metadata(resource, payload, fields)
 
         try:
-            if "tag_names" in data or "url" in data:
+            if "tag_names" in fields or "url" in fields:
                 base_tag_names = (
-                    data["tag_names"]
-                    if "tag_names" in data
+                    payload.tag_names
+                    if "tag_names" in fields
                     else [tag.name for tag in resource.tags]
                 )
                 resource.tags = self._get_or_create_tags(
@@ -287,6 +243,68 @@ class ResourceService:
             raise
 
         return resource
+
+    @staticmethod
+    def _apply_title(resource: Resource, payload: ResourceUpdateSchema, fields: set[str]) -> None:
+        if "title" not in fields:
+            return
+        title = (payload.title or "").strip()
+        if not title:
+            raise ValidationError("Baslik bos olamaz.")
+        resource.title = title
+
+    @staticmethod
+    def _apply_url(resource: Resource, payload: ResourceUpdateSchema, fields: set[str]) -> None:
+        if "url" not in fields:
+            return
+        url = (payload.url or "").strip()
+        if url:
+            _validate_url(url)
+        resource.url = url or None
+
+    def _apply_category(self, resource: Resource, payload: ResourceUpdateSchema, fields: set[str]) -> None:
+        if "category_id" not in fields:
+            return
+        cat_id = payload.category_id
+        if cat_id is not None and self._category_repo.get_by_id(cat_id) is None:
+            raise ResourceNotFoundError(f"Kategori bulunamadi: id={cat_id}")
+        resource.category_id = cat_id
+
+    @staticmethod
+    def _apply_status_and_progress(
+        resource: Resource, payload: ResourceUpdateSchema, fields: set[str]
+    ) -> None:
+        if "status" in fields:
+            resource.status = payload.status
+            if "progress" not in fields:
+                resource.progress = _progress_for_status(resource.status, resource.progress)
+
+        if "progress" in fields:
+            progress = payload.progress
+            if not (0.0 <= progress <= 100.0):
+                raise ValueError("Ilerleme degeri 0-100 arasinda olmalidir.")
+            resource.progress = progress
+            resource.status = _status_for_progress(progress)
+
+    @staticmethod
+    def _apply_priority(resource: Resource, payload: ResourceUpdateSchema, fields: set[str]) -> None:
+        if "priority" not in fields:
+            return
+        priority = payload.priority
+        if priority not in (1, 2, 3):
+            raise ValidationError("Oncelik degeri 1, 2 veya 3 olmalidir.")
+        resource.priority = priority
+
+    def _apply_metadata(self, resource: Resource, payload: ResourceUpdateSchema, fields: set[str]) -> None:
+        if resource.url and ("url" in fields or "extra_metadata" in fields):
+            resource.extra_metadata = self._resolve_extra_metadata(
+                url=resource.url,
+                provided=payload.extra_metadata if "extra_metadata" in fields else None,
+                scrape=True,
+                fallback=resource.extra_metadata,
+            )
+        elif "extra_metadata" in fields:
+            resource.extra_metadata = payload.extra_metadata
 
     def update_resource_progress(self, resource_id: int, progress: float) -> Resource:
         if not (0.0 <= progress <= 100.0):

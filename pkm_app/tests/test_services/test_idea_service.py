@@ -2,6 +2,7 @@
 import pytest
 from pkm_app.models.idea import Idea, IdeaStatus
 from pkm_app.services.idea_service import IdeaService
+from pkm_app.services.schemas import IdeaUpdateSchema
 from pkm_app.core.exceptions import ValidationError
 
 def test_create_idea_success(session):
@@ -23,7 +24,9 @@ def test_update_idea(session):
     svc = IdeaService(session)
     idea = svc.create_idea("Fikir 1")
     
-    updated = svc.update_idea(idea.id, {"title": "Guncel Fikir 1", "status": IdeaStatus.EVALUATING})
+    updated = svc.update_idea(
+        idea.id, IdeaUpdateSchema(title="Guncel Fikir 1", status=IdeaStatus.EVALUATING)
+    )
     assert updated.title == "Guncel Fikir 1"
     assert updated.status == IdeaStatus.EVALUATING
 

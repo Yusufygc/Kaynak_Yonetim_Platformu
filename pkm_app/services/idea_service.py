@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from core.events import event_bus
 from core.exceptions import ValidationError
 from core.logger import log
+from .schemas import IdeaUpdateSchema
 
 class IdeaService:
     def __init__(self, session: Session) -> None:
@@ -37,26 +38,29 @@ class IdeaService:
             log.exception("Fikir kaydedilirken hata olustu.")
             raise
 
-    def update_idea(self, idea_id: int, updates: dict) -> Idea:
+    def update_idea(self, idea_id: int, payload: IdeaUpdateSchema) -> Idea:
         idea = self._repo.get_by_id(idea_id)
         if not idea:
             raise ValidationError("Güncellenecek fikir bulunamadı.")
-            
-        if "title" in updates:
-            title = updates["title"]
+
+        fields = payload.model_fields_set
+
+        if "title" in fields:
+            title = payload.title
             if not title or not title.strip():
                 raise ValidationError("Fikir başlığı boş olamaz.")
             idea.title = title.strip()
-            
-        if "description" in updates:
-            idea.description = updates["description"].strip()
-            
-        if "status" in updates:
-            idea.status = updates["status"]
-            
-        if "priority" in updates:
-            idea.priority = updates["priority"]
-            
+
+        if "description" in fields:
+            idea.description = (payload.description or "").strip()
+
+        if "status" in fields:
+            idea.status = payload.status
+
+        if "priority" in fields:
+            idea.priority = payload.priority
+
+
         try:
             self._session.commit()
             event_bus.idea_updated.emit(idea.id)
