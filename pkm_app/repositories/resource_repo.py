@@ -1,7 +1,7 @@
 from typing import Iterable
 
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import Resource, ResourceStatus, resource_tags_link
 from .base_repository import BaseRepository
@@ -17,16 +17,22 @@ class ResourceRepository(BaseRepository[Resource]):
     def __init__(self, session: Session) -> None:
         super().__init__(Resource, session)
 
+    def _base_query(self):
+        """category/tags iliskilerini eager-load eder — kart render'da N+1 sorguyu onler."""
+        return self._session.query(Resource).options(
+            joinedload(Resource.category), selectinload(Resource.tags)
+        )
+
     def get_all(self) -> list[Resource]:
-        return list(_default_order(self._session.query(Resource)).all())
+        return list(_default_order(self._base_query()).all())
 
     def get_by_status(self, status: ResourceStatus) -> list[Resource]:
-        q = self._session.query(Resource).filter(Resource.status == status)
+        q = self._base_query().filter(Resource.status == status)
         return list(_default_order(q).all())
 
     def search_by_keyword(self, keyword: str) -> list[Resource]:
         pattern = f"%{keyword}%"
-        q = self._session.query(Resource).filter(
+        q = self._base_query().filter(
             or_(
                 Resource.title.ilike(pattern),
                 Resource.url.ilike(pattern),
@@ -35,30 +41,17 @@ class ResourceRepository(BaseRepository[Resource]):
         )
         return list(_default_order(q).all())
 
-    def get_with_tags(self, tag_ids: list[int]) -> list[Resource]:
-        q = (
-            self._session.query(Resource)
-            .join(resource_tags_link, Resource.id == resource_tags_link.c.resource_id)
-            .filter(resource_tags_link.c.tag_id.in_(tag_ids))
-            .distinct()
-        )
-        return list(_default_order(q).all())
-
     def get_by_category(self, category_id: int) -> list[Resource]:
-        q = self._session.query(Resource).filter(Resource.category_id == category_id)
-        return list(_default_order(q).all())
-
-    def get_pinned(self) -> list[Resource]:
-        q = self._session.query(Resource).filter(Resource.is_pinned.is_(True))
+        q = self._base_query().filter(Resource.category_id == category_id)
         return list(_default_order(q).all())
 
     def get_favorites(self) -> list[Resource]:
-        q = self._session.query(Resource).filter(Resource.is_favorite.is_(True))
+        q = self._base_query().filter(Resource.is_favorite.is_(True))
         return list(_default_order(q).all())
 
     def get_urls_only(self) -> list[Resource]:
         """Sadece URL alani dolu kaynaklari dondurur (URL Vitrini icin)."""
-        q = self._session.query(Resource).filter(
+        q = self._base_query().filter(
             Resource.url.isnot(None), Resource.url != ""
         )
         return list(_default_order(q).all())
@@ -79,7 +72,7 @@ class ResourceRepository(BaseRepository[Resource]):
         Etiket filtresi OR semantigi: kayit, secilen etiketlerden en az birine
         sahipse listeye girer.
         """
-        q = self._session.query(Resource)
+        q = self._base_query()
 
         statuses_list = list(statuses) if statuses else []
         if statuses_list:

@@ -136,7 +136,6 @@ class ResourceFlow(QObject):
             resource = self._controller.add_resource(data)
             if resource is not None:
                 self._detail.clear()
-                self._workspace.refresh()
                 self._workspace.show_info_banner(f"'{resource.title}' eklendi.")
                 log.info("Form ile kaynak eklendi: id=%d", resource.id)
                 self._schedule_scrape(resource)
@@ -144,7 +143,6 @@ class ResourceFlow(QObject):
             resource = self._controller.update_resource(resource_id, data)
             if resource is not None:
                 self._detail.load_resource(resource)
-                self._workspace.refresh()
                 self._workspace.show_info_banner(f"'{resource.title}' guncellendi.")
                 log.info("Form ile kaynak guncellendi: id=%d", resource.id)
                 self._schedule_scrape(resource)

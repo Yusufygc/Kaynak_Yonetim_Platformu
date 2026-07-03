@@ -3,14 +3,12 @@ class AppStrings:
     APP_TITLE = "Kişisel Bilgi Yöneticisi"
 
     # Sidebar
-    ALL_RESOURCES = "Tüm Kaynaklar"
     INBOX = "Gelen Kutusu"
     PLANNED = "Planlananlar"
     URL_SHOWCASE = "Bağlantı Vitrini"
     FAVORITES = "Favoriler"
-    CATEGORIES = "Kategoriler"
-    TAGS = "Etiketler"
     TOGGLE_THEME = "Tema Değiştir"
+    TOGGLE_SIMPLE_MODE = "Sade Mod"
 
     # Toolbar
     SEARCH_PLACEHOLDER = "Ara..."
@@ -71,13 +69,7 @@ class AppStrings:
     SAVE_NOTES = "Notu Kaydet"
 
     # Errors
-    ERR_INVALID_URL = "Geçersiz URL formatı."
-    ERR_CATEGORY_NOT_FOUND = "Kategori bulunamadı."
-    ERR_RESOURCE_NOT_FOUND = "Kaynak bulunamadı."
-    ERR_DUPLICATE = "Bu isimde bir kayıt zaten mevcut."
-    ERR_PROGRESS_RANGE = "İlerleme değeri 0-100 arasında olmalıdır."
     ERR_TITLE_REQUIRED = "Başlık boş bırakılamaz."
-    ERR_HEX_FORMAT = "Renk formatı #RRGGBB olmalı (örnek: #3B82F6)."
     ERR_COLOR_REQUIRED = "Renk seçilmelidir."
 
     # Renk seçici

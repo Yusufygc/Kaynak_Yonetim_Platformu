@@ -7,18 +7,17 @@
 | Sütun | Bileşen | Dosya |
 |-------|---------|-------|
 | Sol | Sidebar (navigasyon) | `ui/components/sidebar.py` |
-| Orta | `ContentWorkspace` (3 sayfa + filter dispatch) | `ui/views/content_workspace.py` |
+| Orta | `ContentWorkspace` (2 sayfa + filter dispatch) | `ui/views/content_workspace.py` |
 | Sağ | `DetailView` (3 sayfa stack koordinatörü) | `ui/views/detail_view.py` |
 
-### UI Katmanları (2026-05-17 refaktör sonrası)
+### UI Katmanları (2026-07-03 itibariyle — "Tüm Kaynaklar" sayfası kaldırıldı)
 
 ```
 MainWindow (ince compose, ~55 satır)
 ├── Sidebar
 ├── ContentWorkspace
-│     ├── ContentView (ResourceCard listesi)
 │     ├── SettingsView (kategori/etiket CRUD)
-│     └── UrlShowcaseView (UrlRichCard)
+│     └── UrlShowcaseView (tek içerik sayfası — 2 iç görünüm modu, bkz. [[url_vitrin]])
 └── DetailView (QStackedWidget koordinatörü)
       ├── EmptyDetail (ui/components/empty_detail.py)
       ├── ResourceDetailPanel (ui/components/resource_detail_panel.py)
@@ -42,39 +41,27 @@ ResourceFlow (ui/controllers/resource_flow.py)
 Sabit genişlik: 220 px. Sadece navigasyon — CRUD işlemleri buraya eklenmez.
 Navigasyon item'ları qtawesome ikonlarıyla gösterilir; seçili item accent rengine, diğerleri tema ikon rengine döner.
 
-`_STATIC_ITEMS` ile tanımlı 6 nav öğesi:
+`_STATIC_ITEMS` ile tanımlı 2 nav öğesi (2026-07-03'te "Tüm Kaynaklar" kaldırıldı — bkz. [[url_vitrin]]):
 
 | Etiket | Filter Key | Yönlendirme |
 |--------|-----------|-------------|
-| Tüm Kaynaklar | `"all"` | ContentView — tüm kaynaklar |
-| Gelen Kutusu | `"inbox"` | ContentView — `INBOX` statüslü kaynaklar |
-| Planlananlar | `"planned"` | ContentView — `PLANNED` statüslü kaynaklar |
-| Favoriler | `"favorites"` | ContentView — `is_favorite=True` kayıtlar (her listede pinli üstte) |
-| Bağlantı Vitrini | `"url_showcase"` | UrlShowcaseView — URL'li kaynaklar |
+| Bağlantı Vitrini | `"url_showcase"` | UrlShowcaseView — ana sayfa |
 | Ayarlar | `"settings"` | SettingsView — kategori/etiket CRUD |
 
-Alt kısımda **Tema Değiştir** butonu. Sidebar `event_bus.sidebar_filter_changed(filter_key)` yayınlar; `ResourceFlow._on_filter_changed` yakalar → `ContentWorkspace.apply_filter()`.
+`"inbox"/"planned"/"favorites"` gibi durum bazlı filtreler artık ayrı bir nav öğesi değil — `FilterBar`'ın Durum chip'leri ve Favoriler chip'i üzerinden (hangi sayfada olursa olsun) uygulanır.
+
+Alt kısımda iki `ToggleSwitch` satırı: **Tema Değiştir** ve **Sade Mod**. Sidebar `event_bus.sidebar_filter_changed(filter_key)` yayınlar; `ResourceFlow._on_filter_changed` yakalar → `ContentWorkspace.apply_filter()`. "Sade Mod" toggle'ı `event_bus.simple_mode_toggled(bool)` yayınlar (bkz. [[event_bus]]) — **UrlShowcaseView'ın hangi iç görünümü gösterdiğini değiştirir** (detay: [[url_vitrin]]), kalıcılık yok, oturum içinde bellekte tutulur (tema toggle'ıyla aynı davranış). `set_collapsed()` daraltılmış sidebar'da her iki toggle etiketini de gizler.
 
 ---
 
 ## Orta — `ContentWorkspace` (QStackedWidget)
 
-`MainWindow._build_ui` içinde `QSplitter`'ın sol widget'ı. Üç sayfa:
+`MainWindow._build_ui` içinde `QSplitter`'ın sol widget'ı. İki sayfa (2026-07-03'te `ContentView` kaldırıldı, bkz. [[url_vitrin]]):
 
 | Index | Widget | Ne zaman gösterilir |
 |-------|--------|---------------------|
-| 0 | `ContentView` | Tüm filtreler (all/inbox/planned/search:…) |
-| 1 | `SettingsView` | `"settings"` filtresi |
-| 2 | `UrlShowcaseView` | `"url_showcase"` filtresi |
-
-### ContentView (`ui/views/content_view.py`)
-- **Üst Bar:** `SearchBar` + "Yeni Ekle" butonu
-- **FilterBar** (`ui/components/filter_bar.py`): Kategori dropdown + çoklu Etiket dropdown + Durum chip'leri + Öncelik chip'leri + Temizle. `filters_changed(dict)` sinyali → `ContentWorkspace._on_filters_changed` → aktif sayfa yeniden çizilir. Filtre şeması: `{"category_id", "tag_ids", "statuses", "priorities"}`. Aynı bileşen `UrlShowcaseView`'da da kullanılır.
-  - **Görsel tasarım (2026-07-02):** Gövdeden ayrık "yükseltilmiş navbar kartı" — kendi arka planı (`surface_elevated`), kenarlığı, 12px yuvarlak köşesi ve `QGraphicsDropShadowEffect` gölgesi var (`Colors.SHADOW`, tema değişince güncellenir). `QFrame` alt sınıfı olduğu için QSS `background-color`/`border-radius`'un boyanması `WA_StyledBackground` attribute'una bağlı — bu attribute set edilmeden QSS arka planı yoksayılır (Qt gotcha'sı). Filtre grupları arası ince `#FilterSeparator` ayraçlarla görsel olarak bölünür. "Temizle" butonu hiçbir filtre aktif değilken otomatik devre dışı kalır (`_update_clear_button_state()`), gereksiz tıklamayı önler.
-  - `%RRGGBBAA` (CSS-stili, alfa sonda) tema renklerini (`shadow_color` gibi) Qt'nin beklediği `#AARRGGBB` formatına çeviren `ui/theme_utils.py::to_qcolor()` — `ui/components/painted.py`'deki eski özel `_to_color` fonksiyonundan buraya taşındı (DRY), `painted.py` artık buradan import ediyor.
-- **Inline Banner:** `InlineBanner` — başarı/hata bildirimi, 3.5 sn sonra kaybolur
-- **İçerik:** `QScrollArea` + `FlowLayout` içinde `ResourceCard` widget'ları
-- **Kart üstü pin/favori:** `PinButton` + `FavoriteButton` (`ui/components/card_icon_button.py`). Tıklama event_bus üzerinden `ResourceFlow → controller.toggle_pin/toggle_favorite`. Pinli kayıt her sorguda en üste gelir.
+| 0 | `SettingsView` | `"settings"` filtresi |
+| 1 | `UrlShowcaseView` | Her şey (tek içerik sayfası) |
 
 ### SettingsView (`ui/views/settings_view.py`)
 `QTabWidget`, iki sekme:
@@ -82,10 +69,12 @@ Alt kısımda **Tema Değiştir** butonu. Sidebar `event_bus.sidebar_filter_chan
 - **Etiketler:** Scroll liste (`TagRow`) + inline ekleme formu (ad)
 Her `CategoryRow` / `TagRow`: inline düzenle + 2-tıklı sil. `QDialog/QMessageBox` kullanılmaz.
 
-### UrlShowcaseView (`ui/views/url_showcase_view.py`)
-- `FlowLayout` içinde `UrlRichCard` bileşenleri
-- Sadece `url` alanı dolu kaynaklar gösterilir
-- `load_resources(list)` — `ContentWorkspace._show_url_showcase` tarafından çağrılır
+### UrlShowcaseView (`ui/views/url_showcase_view.py`) — tek içerik sayfası
+Detaylı açıklama: [[url_vitrin]]. Özet: **Üst Bar:** `SearchBar` + "Yeni Ekle" butonu — **FilterBar** (`ui/components/filter_bar.py`, "yükseltilmiş navbar kartı" tasarımı, bkz. altındaki not) — **InlineBanner** — içerik alanı `_mode_stack` (`QStackedWidget`, 2 mod): "rich" (varsayılan, `UrlRichCard` + url-only) / "simple" ("Sade Mod" açık, `ResourceCard` + tüm kaynaklar).
+
+**FilterBar görsel tasarımı (2026-07-02):** Gövdeden ayrık "yükseltilmiş navbar kartı" — kendi arka planı (`surface_elevated`), kenarlığı, 12px yuvarlak köşesi ve `QGraphicsDropShadowEffect` gölgesi var (`Colors.SHADOW`, tema değişince güncellenir). `QFrame` alt sınıfı olduğu için QSS `background-color`/`border-radius`'un boyanması `WA_StyledBackground` attribute'una bağlı — bu attribute set edilmeden QSS arka planı yoksayılır (Qt gotcha'sı). Filtre grupları arası ince `#FilterSeparator` ayraçlarla görsel olarak bölünür. "Temizle" butonu hiçbir filtre aktif değilken otomatik devre dışı kalır (`_update_clear_button_state()`). `%RRGGBBAA` (CSS-stili, alfa sonda) tema renklerini Qt'nin beklediği `#AARRGGBB` formatına çeviren `ui/theme_utils.py::to_qcolor()` kullanılır.
+
+**Kart üstü pin/favori:** `PinButton` + `FavoriteButton` (`ui/components/card_icon_button.py`). Tıklama event_bus üzerinden `ResourceFlow → controller.toggle_pin/toggle_favorite`. Pinli kayıt her sorguda en üste gelir.
 
 ---
 
@@ -117,7 +106,7 @@ DetailView yalnızca sayfa geçişini ve sinyal relay'ini yönetir; widget mant�
 - `load_resource(resource, categories)` → düzenleme modu (header: "Kaynağı Düzenle", alanlar dolu)
 - `submitted(dict)` sinyali: `resource_id` anahtarı varsa güncelleme, yoksa ekleme
 
-`ResourceFlow._on_form_submitted` ayrımı yapar → `controller.add_resource` veya `controller.update_resource`.
+`ResourceFlow._on_form_submitted` ayrımı yapar → `controller.add_resource` veya `controller.update_resource`. **Performans notu (2026-07-03):** bu iki controller çağrısı `event_bus.resource_added`/`resource_updated` yayınlar ve bu, `ResourceFlow._on_resource_changed` üzerinden zaten senkron olarak `workspace.refresh()`'i tetikler — `_on_form_submitted` eskiden ayrıca kendi `workspace.refresh()`'ini de çağırıyordu (gereksiz ikinci tam sorgu+kart-yeniden-kurulumu). Bu tekrar kaldırıldı; tek doğruluk kaynağı artık event bus.
 
 ---
 
@@ -125,15 +114,15 @@ DetailView yalnızca sayfa geçişini ve sinyal relay'ini yönetir; widget mant�
 
 | Tip | Dosya | Kullanım |
 |-----|-------|----------|
-| `ResourceCard` | `ui/components/resource_card.py` | ContentView (all/inbox/planned/search) |
-| `UrlRichCard` | `ui/components/url_rich_card.py` | UrlShowcaseView |
+| `ResourceCard` | `ui/components/resource_card.py` | UrlShowcaseView — "simple" mod (Sade Mod açık, tüm kaynaklar) |
+| `UrlRichCard` | `ui/components/url_rich_card.py` | UrlShowcaseView — "rich" mod (varsayılan, url-only) |
 
-Kartlar `AccentFrame` tabanlıdır: sol accent şeridi painter ile çizilir, hover durumunda kısa shadow/lift animasyonu alır. `ResourceCard` vurgu rengi kuralı: Kategori rengi > Durum rengi (fallback) şeklindedir. Durum/tag/kategori rozetleri `ColorBadge`, kategori renk önizlemeleri `ColorSwatch` ile çizilir.
+Kartlar `AccentFrame` tabanlıdır: sol accent şeridi painter ile çizilir, hover durumunda kısa shadow/lift animasyonu alır. `ResourceCard` vurgu rengi kuralı: Kategori rengi > Durum rengi (fallback) şeklindedir. Durum/tag/kategori rozetleri `ColorBadge`, kategori renk önizlemeleri `ColorSwatch` ile çizilir. Her iki kart tipi de tam içerikle render edilir — `ResourceCard`'ın görsel detay gizleyen bir "sade" varyantı yoktur (bkz. [[url_vitrin]]'deki Sade Mod düzeltmesi).
 
 ---
 
 ## Boş Durum (Empty State)
-Sonuç yokken `ContentView.show_empty_state(True)` çağrılır — scroll alanı gizlenir, ortalanmış `EmptyStateLabel` gösterilir.
+Sonuç yokken `UrlShowcaseView`'in ilgili moduna ait iç `QStackedWidget`'ı boş-durum sayfasına geçer (`_rich_stack`/`_simple_stack`, her biri kendi `EmptyStateLabel`'ına sahip).
 
 ---
 

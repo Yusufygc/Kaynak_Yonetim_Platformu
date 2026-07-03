@@ -41,6 +41,7 @@
 | `filters_changed` | `Signal(dict)` | FilterBar değişti (ContentWorkspace tarafından kullanılır; view sinyalleri üzerinden lokal de geçer) |
 | `error_occurred` | `Signal(str)` | Herhangi bir işlem hatası — ContentView / SettingsView banner gösterir |
 | `theme_changed` | `Signal(dict)` | Tema değişti → bkz. [[tema_yonetimi]] |
+| `simple_mode_toggled` | `Signal(bool)` | Sidebar'daki "Sade Mod" toggle'ı değişti → `ContentWorkspace._on_simple_mode_changed`, `UrlShowcaseView`'ın gösterdiği iç modu (rich `UrlRichCard`/url-only ↔ simple `ResourceCard`/tüm kaynaklar) değiştirir, bkz. [[url_vitrin]] |
 
 ---
 

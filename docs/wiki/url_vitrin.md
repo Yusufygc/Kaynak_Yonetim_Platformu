@@ -8,11 +8,25 @@ Web bağlantılarını (URL) metin listesinde kaybetmemek için OpenGraph/meta v
 ## Bileşenler
 
 ### URL Vitrin Sekmesi — `ui/views/url_showcase_view.py`
-- **Uygulamanın açılış (varsayılan) sayfasıdır.** `main_window.py` başlangıçta `self._sidebar.select_by_key("url_showcase")` + `self._workspace.apply_filter("url_showcase")` çağırır; sidebar'da da "Bağlantı Vitrini" seçili görünür.
-- `ContentWorkspace._stack` içinde `_PAGE_URL_SHOWCASE = 2` olarak mount edilmiştir.
+- **Uygulamanın açılış (varsayılan) sayfası VE artık tek içerik sayfasıdır.** `main_window.py` başlangıçta `self._sidebar.select_by_key("url_showcase")` + `self._workspace.apply_filter("url_showcase")` çağırır; sidebar'da da "Bağlantı Vitrini" seçili görünür.
+- **Vitrinden kaynak ekleme:** Üst barda `SearchBar` + "Yeni Ekle" butonu. `add_requested` sinyali `ContentWorkspace.add_requested`'e relay edilir → `ResourceFlow._on_add_requested` sağ panelde formu açar. Ekleme akışı sayfa-bağımsız çalıştığı için (`DetailView` ayrı bir panel, `_on_form_submitted` sonunda çağırdığı `workspace.refresh()` zaten aktif sayfayı kontrol edip Vitrin'i yeniden yükler) `ResourceFlow`/`MainController` katmanında hiçbir değişiklik gerekmedi.
+- `ContentWorkspace._stack` içinde `_PAGE_URL_SHOWCASE = 1` olarak mount edilmiştir (2026-07-03: `ContentView`/"Tüm Kaynaklar" sayfası kaldırıldıktan sonra tek içerik sayfası).
 - Sidebar tıklamasıyla da açılır: `Sidebar` → `event_bus.sidebar_filter_changed("url_showcase")` → `ResourceFlow._on_filter_changed` → `ContentWorkspace.apply_filter("url_showcase")` → `_show_url_showcase()` → `view.load_resources(resources)`.
-- **Layout:** `FlowLayout` içinde `QScrollArea` (h_spacing=16, v_spacing=16).
-- Sadece `url` alanı dolu kaynaklar listelenir (`urls_only` filtresi).
+
+### ⚠️ Düzeltme (2026-07-03): "Sade Mod"un gerçek anlamı — "Tüm Kaynaklar" sayfası birleştirildi
+
+Önceki bir turda "Sade Mod" yanlış anlaşılıp kartlardan görsel detay gizleyen bir toggle olarak uygulanmıştı. Gerçek istek: **ayrı bir "Tüm Kaynaklar" sayfası tamamen kaldırılsın**, Vitrin tek içerik sayfası olarak kalsın; "Sade Mod" toggle'ı bu tek sayfanın **içeriğini** iki mod arasında değiştirsin. `UrlShowcaseView` artık `_mode_stack` (`QStackedWidget`, 2 sayfa) taşır:
+
+| Mod | Ne zaman | İçerik | Filtre |
+|-----|----------|--------|--------|
+| **rich** (varsayılan, Sade Mod kapalı) | `set_simple_mode(False)` | `FlowLayout` içinde `UrlRichCard` (h_spacing=16, v_spacing=16) | `urls_only=True` — sadece `url` alanı dolu kaynaklar |
+| **simple** (Sade Mod açık) | `set_simple_mode(True)` | `FlowLayout` içinde düz `ResourceCard` (h_spacing=12, v_spacing=12) — eski "Tüm Kaynaklar" sayfasının verdiği görünüm | url kısıtı yok — **tüm** kaynaklar |
+
+Akış: `Sidebar` toggle → `event_bus.simple_mode_toggled(bool)` → `ContentWorkspace._on_simple_mode_changed`: `self._simple_mode` günceller, `self._url_showcase.set_simple_mode(enabled)` çağırıp hangi grid'in görüneceğini değiştirir, sonra `refresh()` ile `_show_url_showcase()`'i doğru filtreyle (mod kapalıysa `urls_only=True` eklenir, açıksa eklenmez) yeniden çalıştırır. Her iki mod da aynı ortak `FilterBar` + `SearchBar`'ı paylaşır (`UrlShowcaseView._emit_combined_filters` — `ContentView`'daki eski desenle birebir aynı, `filters["keyword"]` arama metnini ekler).
+
+Sidebar'daki "Tüm Kaynaklar" nav öğesi (`_STATIC_ITEMS`'taki `"all"` anahtarı), `ContentView` sınıfı (`ui/views/content_view.py`) ve `ContentWorkspace`'teki ona özel dispatch mantığı (`_show_content`, `_show_favorites`, `_merged_filters_for_sidebar`, `_render_resources`) tamamen silindi — zaten `sidebar_filter_changed` sinyali sadece `"url_showcase"`/`"settings"` anahtarlarıyla tetikleniyordu, `"inbox"/"planned"/"favorites"/"category:N"` dalları hiçbir UI elemanından ulaşılamıyordu (FilterBar'ın Durum/Favoriler chip'leri zaten aynı işi görüyor). `ResourceCard`'ın bir önceki turda eklenen yanlış `simple=True` (görsel detay gizleme) parametresi de geri alındı — kart her zaman tam içerikle render edilir.
+
+- **Layout:** `FlowLayout` içinde `QScrollArea` (rich: h_spacing=16/v_spacing=16, simple: h_spacing=12/v_spacing=12).
 
 ### Zengin URL Kartı — `ui/components/url_rich_card.py`
 `QFrame` veya `QWidget` tabanlı, standart `resource_card.py`'dan büyük ve görsel odaklı.
@@ -34,7 +48,7 @@ Web bağlantılarını (URL) metin listesinde kaybetmemek için OpenGraph/meta v
 
 ## Bilinen Hata Düzeltmesi: Sayfa Geçişinde Donma
 
-`ContentWorkspace.apply_filter()` her sayfa geçişinde iki `FilterBar.clear()` çağırıyordu; `clear()` sonunda her zaman `filters_changed` sinyalini senkron fırlattığı için `refresh()` **henüz güncellenmemiş eski sayfa index'iyle** tetikleniyordu. Vitrin sayfasından ayrılırken bu, `_show_url_showcase()`'in (tüm kartların yok edilip yeniden kurulması + her biri için yeni ağ isteği) gereksiz yere 2 kez fazladan çalışmasına, dolayısıyla donmaya yol açıyordu. Çözüm: `FilterBar.clear(notify=False)` — `apply_filter()` zaten hemen ardından doğru sayfayı tek seferde yüklediği için ara `refresh()` tetiklemesine gerek yok. Ayrıca `UrlRichCard._on_thumbnail_loaded()` artık ağ/decode hatalarını `log.warning(...)` ile loglar (önceden sessizce yutuluyordu).
+(Tarihsel not — o dönem hâlâ ayrı bir `ContentView` sayfası vardı.) `ContentWorkspace.apply_filter()` her sayfa geçişinde birden fazla `FilterBar.clear()` çağırıyordu; `clear()` sonunda her zaman `filters_changed` sinyalini senkron fırlattığı için `refresh()` **henüz güncellenmemiş eski sayfa index'iyle** tetikleniyordu. Vitrin sayfasından ayrılırken bu, `_show_url_showcase()`'in (tüm kartların yok edilip yeniden kurulması + her biri için yeni ağ isteği) gereksiz yere 2 kez fazladan çalışmasına, dolayısıyla donmaya yol açıyordu. Çözüm: `FilterBar.clear(notify=False)` — `apply_filter()` zaten hemen ardından doğru sayfayı tek seferde yüklediği için ara `refresh()` tetiklemesine gerek yok. Ayrıca `UrlRichCard._on_thumbnail_loaded()` artık ağ/decode hatalarını `log.warning(...)` ile loglar (önceden sessizce yutuluyordu).
 
 ## Etkileşim
 | Aksiyon | Sonuç |

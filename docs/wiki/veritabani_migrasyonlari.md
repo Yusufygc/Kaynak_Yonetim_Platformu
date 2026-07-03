@@ -6,7 +6,7 @@
 
 - `pkm_app/alembic.ini` — Alembic konfigürasyonu.
 - `pkm_app/migrations/env.py` — modelleri import edip `Base.metadata`'yı `target_metadata` yapar, DB URL'ini `core.config.settings.DATABASE_URL`'den okur (alembic.ini'deki placeholder ezilir).
-- `pkm_app/migrations/versions/` — revizyon dosyaları. İlk revizyon (`..._baseline.py`) mevcut 7 tabloyu (`categories`, `tags`, `resources`, `resource_tags_link`, `highlights`, `vocabulary`, `ideas`) `alembic revision --autogenerate` ile üretildi. İkinci revizyon (`..._ideas_tablosunu_kaldir.py`), Fikirler modülü kaldırılırken `ideas` tablosunu drop eder.
+- `pkm_app/migrations/versions/` — revizyon dosyaları. İlk revizyon (`..._baseline.py`) mevcut 7 tabloyu (`categories`, `tags`, `resources`, `resource_tags_link`, `highlights`, `vocabulary`, `ideas`) `alembic revision --autogenerate` ile üretildi. İkinci revizyon (`..._ideas_tablosunu_kaldir.py`), Fikirler modülü kaldırılırken `ideas` tablosunu drop eder. Üçüncü revizyon (`ff016ad9bf6e_kaynak_filtre_kolonlarina_index_ekle.py`, 2026-07-03), N+1 sorgu denetimi sonrası `resources.status/category_id/is_favorite/is_pinned/url` kolonlarına index ekler (`query_filtered`'ın tam bu kolonlarda filtrelediği tespit edildi, önceden sadece PK indeksliydi).
 
 ## `init_db()` Akışı (`utils/db_utils.py`)
 
@@ -27,6 +27,15 @@ alembic revision --autogenerate -m "kisa_aciklama"
 ```
 
 `env.py` zaten `Base.metadata`'yı okuduğu için modelde yapılan değişiklik otomatik algılanır. Üretilen dosya mutlaka gözden geçirilmeli (autogenerate her zaman doğru `downgrade()` üretmeyebilir, index/constraint isimlendirmesi bazen elle düzeltme ister).
+
+**Gerçek DB'ye dokunmadan autogenerate:** CLI üzerinden `alembic revision --autogenerate` çalıştırırken de aşağıdaki ⚠️ tuzak geçerlidir. Programatik `alembic_command.upgrade(...)` çağrılarında `monkeypatch.setattr(db_utils.settings, "DATABASE_URL", ...)` kullanılırken, CLI'dan çalıştırırken en basit yöntem `DATABASE_URL` ortam değişkenini komuttan önce **geçici bir kopya DB'ye** işaret edecek şekilde export etmektir — `core.config.Settings` pydantic `BaseSettings` olduğu için süreç başlarken ortam değişkenini otomatik okur, `.env` dosyasını ezer:
+```bash
+export DATABASE_URL="sqlite:///</path/to/scratch/gecici.db>"
+alembic upgrade head            # eski semayi gecici DB'de olustur
+alembic revision --autogenerate -m "..."
+alembic upgrade head && alembic downgrade -1   # olustur/geri al dongusunu dogrula
+```
+Gerçek DB'ye asla dokunulmaz; migration dosyası incelendikten sonra gerçek DB'ye uygulanması bir sonraki normal `init_db()` başlangıç akışına bırakılır.
 
 ## Doğrulama Notu
 

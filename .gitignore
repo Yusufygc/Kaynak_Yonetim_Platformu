@@ -69,4 +69,3 @@ docs/*
 !docs/wiki/*.md
 
 .claude
-graphify-out

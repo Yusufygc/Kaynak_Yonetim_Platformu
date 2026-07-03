@@ -4,7 +4,6 @@ import urllib.request
 from PySide6.QtCore import QRunnable, QObject, Signal, Slot, QThreadPool, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QApplication,
     QHBoxLayout,
     QLabel,
     QPushButton,

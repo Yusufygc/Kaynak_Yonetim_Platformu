@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QApplication
 
-from core.config import settings
 from core.constants.colors import Colors
 from core.logger import log
 from core.paths import resource_path
@@ -44,11 +43,6 @@ class _ThemeManager:
         from core.events import event_bus
         event_bus.theme_changed.emit(theme)
         log.info("Tema uygulandi: %s", theme["name"])
-
-    def toggle_theme(self) -> None:
-        current = self._current_theme.get("name", "dark")
-        next_theme = "light" if current == "dark" else "dark"
-        self.apply_theme(next_theme)
 
     @property
     def current_theme(self) -> dict[str, str]:

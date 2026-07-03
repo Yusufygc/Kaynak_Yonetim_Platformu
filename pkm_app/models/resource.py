@@ -41,17 +41,17 @@ class Resource(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    url: Mapped[str | None] = mapped_column(String(2048), nullable=True, index=True)
     category_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True
     )
     status: Mapped[ResourceStatus] = mapped_column(
-        Enum(ResourceStatus), nullable=False, default=ResourceStatus.PLANNED
+        Enum(ResourceStatus), nullable=False, default=ResourceStatus.PLANNED, index=True
     )
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     progress: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    is_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
     extra_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -26,10 +26,11 @@ Python `TypeVar` + `Generic` ile tüm modellere hizmet veren CRUD sınıfı.
 |-------|----------|
 | `get_by_status(status: ResourceStatus)` | Duruma göre filtrele (inbox/planned/in_progress/completed) |
 | `search_by_keyword(keyword: str)` | Başlık/URL/içerik — ILIKE |
-| `get_with_tags(tag_ids: list[int])` | Etikete göre filtrele (N:N join) |
 | `get_by_category(category_id: int)` | Kategoriye göre filtrele |
-| `get_pinned()` | Sabitlenmiş kaynaklar |
 | `get_urls_only()` | URL alanı dolu kaynaklar (Vitrin için) |
+| `query_filtered(...)` | Kombinasyonel filtre (durum+kategori+etiket+öncelik+favori+url+arama) — `ContentWorkspace` tarafından kullanılan asıl sorgu yolu |
+
+**N+1 önleme (2026-07-03):** Tüm sorgu metotları tek bir private `_base_query()` helper'ından geçer — `joinedload(Resource.category)` + `selectinload(Resource.tags)` ile ilişkiler eager-load edilir. Öncesinde her metot bağımsız `session.query(Resource)` açıyordu; kart render sırasında (`ContentWorkspace._render_resources`, `UrlShowcaseView.load_resources`) her kaynak için `.category`/`.tags` erişimi ayrı bir lazy-load sorgusuna yol açıyordu (N+1). `get_with_tags`/`get_pinned` (sıfır çağrısı olan ölü metotlar) kaldırıldı.
 
 ---
 
@@ -87,8 +88,7 @@ UI ile service arasındaki köprü. Her method try/except ile sarılır; hata �
 
 | Metod | Açıklama |
 |-------|----------|
-| `load_resources_by_filter(key)` | `"all"/"inbox"/"planned"/"url_showcase"/"category:N"` anahtarlarını service metodlarına yönlendirir |
-| `search_resources(keyword)` | Boşsa `get_all()`, doluysa `search(keyword)` |
+| `load_resources_with_filters(filters: dict)` | `ResourceService.query_filtered` proxy — tek filtreleme giriş noktası. (Eski `load_all_resources`/`load_resources_by_filter`/`search_resources` — bunun tarafından süperseslenmiş, sıfır çağrısı olan ölü metotlar — 2026-07-03'te kaldırıldı) |
 | `get_resource(id)` | Tek kaynak |
 | `add_resource(data)` | `resource_added` emit |
 | `update_resource(id, data)` | `resource_updated` emit |

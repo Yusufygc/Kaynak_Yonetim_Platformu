@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from core.events import event_bus
 from core.logger import log
-from models import Resource, ResourceStatus
+from models import Resource
 from services.category_service import CategoryService
 from services.resource_service import ResourceService
 from services.tag_service import TagService
@@ -27,25 +27,6 @@ class MainController:
     # Kaynak islemleri
     # ------------------------------------------------------------------ #
 
-    def load_all_resources(self) -> list[Resource]:
-        return self._resource_svc.get_all()
-
-    def load_resources_by_filter(self, filter_key: str) -> list[Resource]:
-        if filter_key == "all":
-            return self._resource_svc.get_all()
-        if filter_key == "inbox":
-            return self._resource_svc.get_by_status(ResourceStatus.INBOX)
-        if filter_key == "planned":
-            return self._resource_svc.get_by_status(ResourceStatus.PLANNED)
-        if filter_key == "url_showcase":
-            return self._resource_svc.get_urls_only()
-        if filter_key == "favorites":
-            return self._resource_svc.get_favorites()
-        if filter_key.startswith("category:"):
-            cat_id = int(filter_key.split(":")[1])
-            return self._resource_svc.get_by_category(cat_id)
-        return self._resource_svc.get_all()
-
     def load_resources_with_filters(self, filters: dict) -> list[Resource]:
         return self._resource_svc.query_resources(filters)
 
@@ -66,11 +47,6 @@ class MainController:
             log.error("Kaynak eklenemedi: %s", exc)
             event_bus.error_occurred.emit(str(exc))
             return None
-
-    def search_resources(self, keyword: str) -> list[Resource]:
-        if not keyword.strip():
-            return self._resource_svc.get_all()
-        return self._resource_svc.search(keyword)
 
     def update_resource(self, resource_id: int, data: dict) -> Resource | None:
         try:
