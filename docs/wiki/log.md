@@ -4,6 +4,12 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-04] FIX | Kart çakışmasının GERÇEK kök nedeni: FlowLayout stale-layout (3. deneme, çözüldü)
+
+Önceki iki teşhis (deferred-delete, DropShadow ghost) yanlıştı. Gerçek neden `FlowLayout`'ta: (1) `addItem`/`takeAt` `invalidate()` çağırmıyordu, grid yenilenince layout dirty olmuyor, `setGeometry` tetiklenmiyordu; (2) `_do_layout`'taki `not isVisible()` kontrolü (Faz 4 arama filtresi) yeni eklenen henüz-render-edilmemiş kartları da atlıyordu → kart `(0,0)`'da stale kalıp ilk kartla tam üst üste biniyordu. Çözüm: `addItem`/`takeAt`'e `invalidate()`, `_do_layout`'ta `isVisible()` → `isHidden()`. Offscreen geometri testiyle kanıtlandı: fix öncesi son kart hep `(0,0)`, ilk kartla 311x371 kesişim; sonrası 0 çakışma (ekleme/rebuild/mod-geçişi hepsinde). "Tıklayınca düzeliyordu" çünkü panel açılışı merkezi resize edip `setGeometry`'yi tetikliyordu.
+
+---
+
 ## [2026-07-04] FIX | Kart ghosting'in GERÇEK kök nedeni: DropShadowEffect (2. deneme)
 
 Bir önceki `clear_flow`/`setParent(None)` düzeltmesi ghosting'i çözmedi. Gerçek kök neden: `AccentFrame`'in her karta uyguladığı `QGraphicsDropShadowEffect`, `QScrollArea` içinde relayout olunca viewport backing-store'da ghost iz bırakıyor (widget değil, boyanmış iz — bu yüzden setParent(None) çözmedi). Çözüm: `AccentFrame` idle iken effect'i `setEnabled(False)` yapıyor (gölge yalnızca hover'da); rebuild anında tüm kartlar idle olduğu için offscreen effect render'ı — dolayısıyla ghost — oluşmuyor. Sigorta: load sonrası container `.update()`. Yan fayda: rebuild başına N effect-render maliyeti sıfırlandı. Davranış değişikliği: kartlar idle'da düz, gölge hover'da beliriyor.

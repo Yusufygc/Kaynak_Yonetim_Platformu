@@ -46,6 +46,21 @@ Sidebar'daki "Tüm Kaynaklar" nav öğesi (`_STATIC_ITEMS`'taki `"all"` anahtar�
 - Çıkarılan alanlar: `og_title`, `og_description`, `thumbnail`, `favicon`.
 - Request/parse hataları kaynak kaydını engellemez; boş metadata ile devam edilir. Tarama sırasında beklenmeyen bir istisna olursa `_ScrapeWorker` artık bunu yutmaz — `log.exception(...)` ile loglanır, worker çökmez.
 
+## Bilinen Hata Düzeltmesi: Kart Eklerken Üst Üste Binme (GERÇEK kök neden — FlowLayout)
+
+Kartların üst üste binmesi/çakışması iki yanlış teşhisten (deferred-delete, DropShadow ghost) sonra gerçek kök nedene indirgendi. Belirtiler: yeni kaynak eklenince kartlar çakışıyor, **bir karta tıklayınca (detay panel açılıp merkez resize olunca) düzeliyor**, sonra tekrar bozuluyor; mod geçişinde ve sıralamada da bozuluyor.
+
+**Gerçek kök neden — `FlowLayout` stale-layout (`ui/components/flow_layout.py`):**
+1. `addItem()`/`takeAt()` `self.invalidate()` çağırmıyordu → grid yenilenince (clear + yeni kartlar) layout "dirty" olmuyor, `parentWidget().updateGeometry()` tetiklenmiyor, `QScrollArea` container'ı boyutlandırmıyor, `setGeometry()`/`_do_layout()` çağrılmıyordu. Kartlar dış bir olay (tıklama→panel resize) gelene kadar stale/çakışık kalıyordu.
+2. Daha da kritik: `_do_layout()` içindeki `if widget and not widget.isVisible(): continue` satırı (arama filtresi için Faz 4'te eklenmişti) **yeni eklenen henüz-render-edilmemiş kartları da atlıyordu** — parent henüz görünür değilken `isVisible()` False döner → yeni kart hiç `setGeometry` almaz, `(0,0)`'da stale kalıp ilk kartla tam üst üste biner. Offscreen geometri testi bunu sayısal olarak kanıtladı (son kart hep `x=0 y=0`, ilk kartla 311x371 kesişim).
+
+**Çözüm:**
+- `addItem()`/`takeAt()` sonuna `self.invalidate()` (dinamik ekle/çıkar sonrası layout'un yeniden hesaplanması için standart davranış).
+- `_do_layout()`'ta `not isVisible()` → `isHidden()`: yalnızca bilinçli `hide()` edilmiş (arama filtresi) widget'lar atlanır, yeni eklenenler atlanmaz.
+- 2. denemede eklenen yanlış `parentWidget().update()` çağrıları kaldırıldı (`update()` yalnızca repaint, layout hesaplamaz).
+
+Doğrulama: offscreen **geometri** testi — container'ı resize+show, ardışık load/mod-geçişi sonrası hiçbir iki kartın `geometry()`'sinin kesişmediği programatik teyit edildi (fix öncesi kesişme vardı, sonrası yok).
+
 ## Bilinen Hata Düzeltmesi: Kart Eklerken Üst Üste Binme (Ghosting)
 
 Yeni kaynak eklendiğinde (özellikle URL'li kaynaklarda, scrape sonucu metadata gelince ikinci bir tam yeniden yükleme daha tetiklendiği için) kartlar bir anlığına üst üste biniyor/hayalet-kopya bırakıyor, sonra bir etkileşimle (hover/scroll) kendiliğinden düzeliyordu.

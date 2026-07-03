@@ -133,7 +133,6 @@ class UrlShowcaseView(QFrame):
             card = UrlRichCard(resource)
             self._rich_cards.append(card)
             self._rich_flow.addWidget(card)
-        self._rich_flow.parentWidget().update()
 
     def _load_simple(self, resources: list) -> None:
         from ui.components.resource_card import ResourceCard
@@ -150,4 +149,3 @@ class UrlShowcaseView(QFrame):
             card = ResourceCard(resource)
             self._simple_cards.append(card)
             self._simple_flow.addWidget(card)
-        self._simple_flow.parentWidget().update()

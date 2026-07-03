@@ -13,6 +13,7 @@ class FlowLayout(QLayout):
 
     def addItem(self, item) -> None:  # noqa: N802
         self._items.append(item)
+        self.invalidate()  # container updateGeometry -> QScrollArea yeniden boyutlandirir -> setGeometry
 
     def horizontalSpacing(self) -> int:
         return self._h_spacing
@@ -30,7 +31,9 @@ class FlowLayout(QLayout):
 
     def takeAt(self, index: int):  # noqa: N802
         if 0 <= index < len(self._items):
-            return self._items.pop(index)
+            item = self._items.pop(index)
+            self.invalidate()
+            return item
         return None
 
     def expandingDirections(self) -> Qt.Orientations:
@@ -65,7 +68,11 @@ class FlowLayout(QLayout):
 
         for item in self._items:
             widget = item.widget()
-            if widget and not widget.isVisible():
+            # Yalnizca explicit hide() edilmis (arama filtresi) widget'lari atla.
+            # isVisible() kullanmak, henuz gosterilmemis yeni eklenen widget'lari da
+            # atlar (parent henuz gorunur degilken isVisible False doner) -> kart
+            # 0,0'da stale kalir. isHidden() sadece bilincli gizlenenleri yakalar.
+            if widget and widget.isHidden():
                 continue
             space_x = self._h_spacing
             space_y = self._v_spacing
