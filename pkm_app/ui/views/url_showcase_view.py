@@ -15,7 +15,7 @@ from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.filter_bar import FilterBar
-from ui.components.flow_layout import build_flow_stack, EMPTY_PAGE, GRID_PAGE
+from ui.components.flow_layout import build_flow_stack, clear_flow, EMPTY_PAGE, GRID_PAGE
 from ui.components.inline_banner import InlineBanner
 from ui.components.search_bar import SearchBar
 from ui.theme_utils import resolve_theme_color
@@ -121,10 +121,7 @@ class UrlShowcaseView(QFrame):
         from ui.components.url_rich_card import UrlRichCard
 
         self._rich_cards.clear()
-        while self._rich_flow.count():
-            item = self._rich_flow.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()
+        clear_flow(self._rich_flow)
 
         url_resources = [r for r in resources if r.url]
         if not url_resources:
@@ -141,10 +138,7 @@ class UrlShowcaseView(QFrame):
         from ui.components.resource_card import ResourceCard
 
         self._simple_cards.clear()
-        while self._simple_flow.count():
-            item = self._simple_flow.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()
+        clear_flow(self._simple_flow)
 
         if not resources:
             self._simple_stack.setCurrentIndex(EMPTY_PAGE)

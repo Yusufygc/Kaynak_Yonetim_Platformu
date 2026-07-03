@@ -16,7 +16,7 @@ from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.category_row import CategoryRow
 from ui.components.color_picker_button import ColorPickerButton
-from ui.components.flow_layout import build_flow_stack, EMPTY_PAGE, GRID_PAGE
+from ui.components.flow_layout import build_flow_stack, clear_flow, EMPTY_PAGE, GRID_PAGE
 from ui.components.inline_banner import InlineBanner
 from ui.components.search_bar import SearchBar
 from ui.components.tag_row import TagRow
@@ -247,10 +247,7 @@ class SettingsView(QFrame):
     @staticmethod
     def _reload_rows(*, stack, flow, rows: dict,
                      items: list, row_cls, on_edit, on_delete) -> None:
-        while flow.count():
-            item = flow.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()
+        clear_flow(flow)
         rows.clear()
 
         if not items:

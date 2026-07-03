@@ -104,6 +104,22 @@ GRID_PAGE = 0
 EMPTY_PAGE = 1
 
 
+def clear_flow(flow: FlowLayout) -> None:
+    """Widget'lari parent'tan hemen koparip deleteLater() ile siler.
+
+    setParent(None) olmadan sadece deleteLater() cagirmak, gercek silme Qt
+    event loop'unun sonraki turuna ertelendigi icin eski widget'in bir frame
+    boyunca eski konumunda gorunur kalmasina ve yeni eklenen widget'larla
+    cakismasina (flicker) neden olur.
+    """
+    while flow.count():
+        item = flow.takeAt(0)
+        widget = item.widget() if item else None
+        if widget:
+            widget.setParent(None)
+            widget.deleteLater()
+
+
 def build_flow_stack(
     empty_message: str,
     h_spacing: int = 12,

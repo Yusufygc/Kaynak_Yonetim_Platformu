@@ -4,6 +4,12 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-04] FIX | Kaynak/kategori/etiket eklerken kartlar üst üste biniyordu (flicker)
+
+Grid temizlenirken eski widget'lar sadece `deleteLater()` ile işaretleniyordu; gerçek silme Qt event loop'unun sonraki turuna ertelendiği için widget bir-iki frame boyunca eski konumunda görünür kalıyor, yeni eklenen kartla çakışıyordu (özellikle URL'li kaynak eklerken, scrape sonucu ikinci bir tam yeniden yükleme daha tetiklendiği için belirgindi). `ui/components/flow_layout.py::clear_flow()` eklendi — `deleteLater()`'dan önce `setParent(None)` çağırarak widget'ı anında render zincirinden koparıyor. `UrlShowcaseView` (rich/simple) ve `SettingsView` (kategori/etiket) aynı düzeltmeyi kullanıyor.
+
+---
+
 ## [2026-07-04] UI | Ayarlar sayfası: Kategori/Etiket arama kutusu eklendi (Faz 4)
 
 Her kartın üstüne `SearchBar` eklendi; istemci tarafında isim bazlı filtreleme yapıyor (DB'ye gitmiyor). `FlowLayout._do_layout()`'a görünürlük kontrolü eklendi (`isVisible()` false olan widget'lar artık boşluk bırakmadan atlanıyor) — bu olmadan arama ile gizlenen chip'ler grid'de boş kare bırakırdı. Yeni kayıt eklenince aktif arama metni otomatik yeniden uygulanıyor. Bu, kullanıcıyla konuşulan Ayarlar sayfası tasarım iyileştirmesinin son fazıydı (Faz 1-4 tamamlandı).
