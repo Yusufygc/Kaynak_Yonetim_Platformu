@@ -17,6 +17,11 @@ class AccentFrame(QFrame):
         self._shadow_effect = QGraphicsDropShadowEffect(self)
         self._shadow_effect.setBlurRadius(0)
         self._shadow_effect.setOffset(0, 0)
+        # Idle iken effect kapali: QGraphicsEffect'li widget offscreen pixmap'e
+        # render edilir; QScrollArea icinde relayout olunca eski render viewport'ta
+        # ghost iz birakir. Golge yalnizca hover'da anlamli oldugu icin idle'da
+        # tamamen devre disi -> rebuild aninda (tum kartlar idle) ghost olusmaz.
+        self._shadow_effect.setEnabled(False)
         self.setGraphicsEffect(self._shadow_effect)
         self._hover_animation = QPropertyAnimation(self, b"hoverProgress", self)
         self._hover_animation.setDuration(140)
@@ -75,6 +80,11 @@ class AccentFrame(QFrame):
     def _apply_shadow(self) -> None:
         if not self._shadow_color.isValid():
             return
+        if self._hover_progress <= 0.0:
+            # Idle: effect'i kapat ki offscreen render (ve ghost izi) olmasin.
+            self._shadow_effect.setEnabled(False)
+            return
+        self._shadow_effect.setEnabled(True)
         self._shadow_effect.setColor(self._shadow_color)
         self._shadow_effect.setBlurRadius(4 + self._hover_progress * 12)
         self._shadow_effect.setOffset(0, self._hover_progress * 3)

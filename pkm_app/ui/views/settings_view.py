@@ -261,6 +261,7 @@ class SettingsView(QFrame):
             row.delete_requested.connect(on_delete)
             flow.addWidget(row)
             rows[entry.id] = row
+        flow.parentWidget().update()
 
     # ------------------------------------------------------------------ #
     # Slot'lar

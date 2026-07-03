@@ -46,9 +46,15 @@ Sidebar'daki "Tüm Kaynaklar" nav öğesi (`_STATIC_ITEMS`'taki `"all"` anahtar�
 - Çıkarılan alanlar: `og_title`, `og_description`, `thumbnail`, `favicon`.
 - Request/parse hataları kaynak kaydını engellemez; boş metadata ile devam edilir. Tarama sırasında beklenmeyen bir istisna olursa `_ScrapeWorker` artık bunu yutmaz — `log.exception(...)` ile loglanır, worker çökmez.
 
-## Bilinen Hata Düzeltmesi: Kart Eklerken Üst Üste Binme (Flicker)
+## Bilinen Hata Düzeltmesi: Kart Eklerken Üst Üste Binme (Ghosting)
 
-Yeni kaynak eklendiğinde (özellikle URL'li kaynaklarda, scrape sonucu metadata gelince ikinci bir tam yeniden yükleme daha tetiklendiği için) kartlar bir anlığına üst üste biniyor, sonra kendiliğinden düzeliyordu. Kök neden: grid temizlenirken eski widget'lar `flow.takeAt(0)` ile layout'tan çıkarılıp doğrudan `deleteLater()` ile işaretleniyordu — ama `deleteLater()` gerçek silmeyi Qt event loop'unun sonraki turuna erteler, bu sırada widget hâlâ aynı parent'ın çocuğu ve eski konumunda görünür kalır; yeni kartlar aynı/yakın konuma yerleşince bir-iki frame boyunca eski+yeni kart aynı anda ekranda kalıyordu. Çözüm: `ui/components/flow_layout.py::clear_flow()` ortak yardımcı fonksiyonu, `deleteLater()`'dan önce `widget.setParent(None)` çağırarak widget'ı render zincirinden anında koparıyor. `UrlShowcaseView._load_rich/_load_simple` ve `SettingsView._reload_rows` bu fonksiyonu kullanıyor (2026-07-04).
+Yeni kaynak eklendiğinde (özellikle URL'li kaynaklarda, scrape sonucu metadata gelince ikinci bir tam yeniden yükleme daha tetiklendiği için) kartlar bir anlığına üst üste biniyor/hayalet-kopya bırakıyor, sonra bir etkileşimle (hover/scroll) kendiliğinden düzeliyordu.
+
+**İlk (eksik) teşhis:** Grid temizlenirken eski widget'lar `deleteLater()` ile işaretlenip ekranda kaldığı sanıldı; `ui/components/flow_layout.py::clear_flow()` eklenip `deleteLater()`'dan önce `setParent(None)` çağrıldı. Bu, deferred-delete widget'ını hemen koparıyor (iyi bir temizlik) ama **sorunu çözmedi** — smoke testte widget'ın `parent()` gerçekten `None` olmasına rağmen görsel iz kalıyordu.
+
+**Gerçek kök neden — `QGraphicsDropShadowEffect` backing-store ghost:** `AccentFrame` (`ui/components/painted.py`) her karta bir `QGraphicsDropShadowEffect` (gölge) uygular. `QGraphicsEffect`'li widget Qt tarafından offscreen pixmap'e render edilir; kart bir `QScrollArea` container'ının çocuğu olduğundan, yeni kart eklenince `FlowLayout.setGeometry()` tüm kartları yeniden konumlandırır ama eski effect-render'ının viewport'ta kapladığı bölgeyi invalidate etmez → gölge/kart izi bir sonraki tam repaint'e kadar "hayalet" olarak kalır. Widget değil, boyanmış iz olduğu için `setParent(None)` çözmedi.
+
+**Çözüm:** `AccentFrame` idle iken (`_hover_progress <= 0`) `QGraphicsDropShadowEffect`'i `setEnabled(False)` yapar; gölge yalnızca hover'da ("lift" efekti) açılır. Rebuild her zaman tüm kartlar idle iken olduğundan (kullanıcı formu submit ederken imleç kartların üstünde değil), rebuild anında hiçbir kartta offscreen effect render'ı olmaz → ghost kaynağı kurur. Bonus: rebuild başına N effect-render maliyeti sıfırlanır. Sigorta olarak `_load_rich`/`_load_simple`/`_reload_rows` sonunda container `.update()` ile invalidate edilir. `clear_flow()` (setParent+deleteLater) yine de doğru bir temizlik olarak korunur (2026-07-04).
 
 ## Bilinen Hata Düzeltmesi: Sayfa Geçişinde Donma
 

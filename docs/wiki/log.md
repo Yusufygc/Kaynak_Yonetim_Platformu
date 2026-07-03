@@ -4,6 +4,12 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-04] FIX | Kart ghosting'in GERÇEK kök nedeni: DropShadowEffect (2. deneme)
+
+Bir önceki `clear_flow`/`setParent(None)` düzeltmesi ghosting'i çözmedi. Gerçek kök neden: `AccentFrame`'in her karta uyguladığı `QGraphicsDropShadowEffect`, `QScrollArea` içinde relayout olunca viewport backing-store'da ghost iz bırakıyor (widget değil, boyanmış iz — bu yüzden setParent(None) çözmedi). Çözüm: `AccentFrame` idle iken effect'i `setEnabled(False)` yapıyor (gölge yalnızca hover'da); rebuild anında tüm kartlar idle olduğu için offscreen effect render'ı — dolayısıyla ghost — oluşmuyor. Sigorta: load sonrası container `.update()`. Yan fayda: rebuild başına N effect-render maliyeti sıfırlandı. Davranış değişikliği: kartlar idle'da düz, gölge hover'da beliriyor.
+
+---
+
 ## [2026-07-04] FIX | Kaynak/kategori/etiket eklerken kartlar üst üste biniyordu (flicker)
 
 Grid temizlenirken eski widget'lar sadece `deleteLater()` ile işaretleniyordu; gerçek silme Qt event loop'unun sonraki turuna ertelendiği için widget bir-iki frame boyunca eski konumunda görünür kalıyor, yeni eklenen kartla çakışıyordu (özellikle URL'li kaynak eklerken, scrape sonucu ikinci bir tam yeniden yükleme daha tetiklendiği için belirgindi). `ui/components/flow_layout.py::clear_flow()` eklendi — `deleteLater()`'dan önce `setParent(None)` çağırarak widget'ı anında render zincirinden koparıyor. `UrlShowcaseView` (rich/simple) ve `SettingsView` (kategori/etiket) aynı düzeltmeyi kullanıyor.
