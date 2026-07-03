@@ -65,6 +65,8 @@ class FlowLayout(QLayout):
 
         for item in self._items:
             widget = item.widget()
+            if widget and not widget.isVisible():
+                continue
             space_x = self._h_spacing
             space_y = self._v_spacing
             if widget:

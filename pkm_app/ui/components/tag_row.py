@@ -113,3 +113,7 @@ class TagRow(QFrame):
             QtAwesomeIcons.DELETE, Colors.DANGER, AppStrings.DELETE, "RowDeleteButton"
         )
         self._confirm_pending = False
+
+    @property
+    def name(self) -> str:
+        return self._name_label.text()

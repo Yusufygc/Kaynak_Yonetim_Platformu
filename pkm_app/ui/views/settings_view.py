@@ -18,6 +18,7 @@ from ui.components.category_row import CategoryRow
 from ui.components.color_picker_button import ColorPickerButton
 from ui.components.flow_layout import build_flow_stack, EMPTY_PAGE, GRID_PAGE
 from ui.components.inline_banner import InlineBanner
+from ui.components.search_bar import SearchBar
 from ui.components.tag_row import TagRow
 from ui.theme_utils import resolve_theme_color, to_qcolor
 
@@ -68,6 +69,10 @@ class SettingsView(QFrame):
         self._cat_card_shadow = card.graphicsEffect()
         outer.addWidget(card)
 
+        self._cat_search = SearchBar()
+        self._cat_search.search_changed.connect(self._on_cat_search_changed)
+        layout.addWidget(self._cat_search)
+
         self._cat_stack, self._cat_flow = build_flow_stack(
             AppStrings.EMPTY_CATEGORIES_MSG,
             h_spacing=8, v_spacing=8,
@@ -116,6 +121,10 @@ class SettingsView(QFrame):
         card, layout = self._build_card()
         self._tag_card_shadow = card.graphicsEffect()
         outer.addWidget(card)
+
+        self._tag_search = SearchBar()
+        self._tag_search.search_changed.connect(self._on_tag_search_changed)
+        layout.addWidget(self._tag_search)
 
         self._tag_stack, self._tag_flow = build_flow_stack(
             AppStrings.EMPTY_TAGS_MSG,
@@ -208,6 +217,7 @@ class SettingsView(QFrame):
             on_edit=self._on_edit_category,
             on_delete=self._on_delete_category,
         )
+        self._on_cat_search_changed(self._cat_search.text())
 
     def _reload_tags(self, _id: int = 0) -> None:
         self._reload_rows(
@@ -219,6 +229,20 @@ class SettingsView(QFrame):
             on_edit=self._on_edit_tag,
             on_delete=self._on_delete_tag,
         )
+        self._on_tag_search_changed(self._tag_search.text())
+
+    def _on_cat_search_changed(self, text: str) -> None:
+        self._filter_rows(self._cat_flow, self._category_rows, text)
+
+    def _on_tag_search_changed(self, text: str) -> None:
+        self._filter_rows(self._tag_flow, self._tag_rows, text)
+
+    @staticmethod
+    def _filter_rows(flow, rows: dict, text: str) -> None:
+        needle = text.strip().lower()
+        for row in rows.values():
+            row.setVisible(not needle or needle in row.name.lower())
+        flow.invalidate()
 
     @staticmethod
     def _reload_rows(*, stack, flow, rows: dict,

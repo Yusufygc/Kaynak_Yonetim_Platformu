@@ -4,7 +4,9 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
-## [2026-07-04] UI | Ayarlar sayfası: Liste + ekle-formu tek karta entegre edildi (Faz 3)
+## [2026-07-04] UI | Ayarlar sayfası: Kategori/Etiket arama kutusu eklendi (Faz 4)
+
+Her kartın üstüne `SearchBar` eklendi; istemci tarafında isim bazlı filtreleme yapıyor (DB'ye gitmiyor). `FlowLayout._do_layout()`'a görünürlük kontrolü eklendi (`isVisible()` false olan widget'lar artık boşluk bırakmadan atlanıyor) — bu olmadan arama ile gizlenen chip'ler grid'de boş kare bırakırdı. Yeni kayıt eklenince aktif arama metni otomatik yeniden uygulanıyor. Bu, kullanıcıyla konuşulan Ayarlar sayfası tasarım iyileştirmesinin son fazıydı (Faz 1-4 tamamlandı).
 
 `SettingsView`'daki grid ile alt ekleme formu artık iki ayrı kutu değil, `FilterBar`'daki "yükseltilmiş kart" deseniyle (`WA_StyledBackground`, `surface_elevated`, `QGraphicsDropShadowEffect`) tek `#SettingsListCard` içinde birleşti; aralarında ince `#SettingsCardSeparator` ayracı var. Chip renkleri karta göre kontrast sağlaması için `bg_primary`'ye çevrildi (kartın `surface_elevated` rengiyle çakışmasın diye — ışık temada `bg_secondary` ile `surface_elevated` aynı renk olduğundan `bg_secondary` seçilseydi chip'ler görünmez olurdu, bu ayrıntı fark edilip düzeltildi).
 

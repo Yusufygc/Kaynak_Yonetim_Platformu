@@ -139,6 +139,10 @@ class CategoryRow(QFrame):
         )
         self._confirm_pending = False
 
+    @property
+    def name(self) -> str:
+        return self._name_label.text()
+
     def refresh(self, category) -> None:
         self._cat_color = category.color_hex or ""
         self._name_label.setText(category.name)
