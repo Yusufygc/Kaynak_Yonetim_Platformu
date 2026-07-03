@@ -4,6 +4,12 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-04] UI | Ayarlar sayfası: Liste + ekle-formu tek karta entegre edildi (Faz 3)
+
+`SettingsView`'daki grid ile alt ekleme formu artık iki ayrı kutu değil, `FilterBar`'daki "yükseltilmiş kart" deseniyle (`WA_StyledBackground`, `surface_elevated`, `QGraphicsDropShadowEffect`) tek `#SettingsListCard` içinde birleşti; aralarında ince `#SettingsCardSeparator` ayracı var. Chip renkleri karta göre kontrast sağlaması için `bg_primary`'ye çevrildi (kartın `surface_elevated` rengiyle çakışmasın diye — ışık temada `bg_secondary` ile `surface_elevated` aynı renk olduğundan `bg_secondary` seçilseydi chip'ler görünmez olurdu, bu ayrıntı fark edilip düzeltildi).
+
+---
+
 ## [2026-07-04] UI | Ayarlar sayfası: Düzenle/Sil ikon butona dönüştü (Faz 2)
 
 `CategoryRow`/`TagRow`'daki metin `Düzenle`/`Sil` butonları yeni ortak `ui/components/icon_action_button.py::IconActionButton` bileşeniyle kompakt ikon butonlara (kalem/çöp, `QtAwesomeIcons.EDIT/DELETE`) dönüştürüldü — chip'ler daha kompakt. 2-tıklı sil-onay davranışı korundu (`set_state()` ile ikon/renk/tooltip/objectName güncellenir). Yan etki: edit moduna girildiğinde bekleyen sil-onay durumunun artık görsel olarak da sıfırlandığı bir düzeltme yapıldı (önceden sadece dahili bayrak sıfırlanıyordu).

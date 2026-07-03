@@ -36,16 +36,26 @@
 }
 
 #SettingsScrollArea {
-    background-color: {{bg_primary}};
+    background-color: transparent;
+    border: none;
+}
+
+#SettingsListCard {
+    background-color: {{surface_elevated}};
     border: 1px solid {{border_color}};
-    border-radius: 8px;
+    border-radius: 12px;
+}
+
+#SettingsCardSeparator {
+    background-color: {{border_color}};
+    border: none;
 }
 
 /* --- Satir bilesenleri --- */
 
 #CategoryRow,
 #TagRow {
-    background-color: {{surface_elevated}};
+    background-color: {{bg_primary}};
     border: 1px solid {{border_color}};
     border-radius: 8px;
 }

@@ -1,5 +1,7 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -9,6 +11,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.constants.colors import Colors
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.category_row import CategoryRow
@@ -16,6 +19,7 @@ from ui.components.color_picker_button import ColorPickerButton
 from ui.components.flow_layout import build_flow_stack, EMPTY_PAGE, GRID_PAGE
 from ui.components.inline_banner import InlineBanner
 from ui.components.tag_row import TagRow
+from ui.theme_utils import resolve_theme_color, to_qcolor
 
 
 class SettingsView(QFrame):
@@ -57,9 +61,12 @@ class SettingsView(QFrame):
 
     def _build_category_tab(self) -> QWidget:
         w = QWidget()
-        layout = QVBoxLayout(w)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        outer = QVBoxLayout(w)
+        outer.setContentsMargins(8, 8, 8, 8)
+
+        card, layout = self._build_card()
+        self._cat_card_shadow = card.graphicsEffect()
+        outer.addWidget(card)
 
         self._cat_stack, self._cat_flow = build_flow_stack(
             AppStrings.EMPTY_CATEGORIES_MSG,
@@ -67,6 +74,7 @@ class SettingsView(QFrame):
             scroll_name="SettingsScrollArea",
         )
         layout.addWidget(self._cat_stack, stretch=1)
+        layout.addWidget(self._card_separator())
 
         # Yeni kategori ekleme formu
         add_row = QHBoxLayout()
@@ -102,9 +110,12 @@ class SettingsView(QFrame):
 
     def _build_tag_tab(self) -> QWidget:
         w = QWidget()
-        layout = QVBoxLayout(w)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        outer = QVBoxLayout(w)
+        outer.setContentsMargins(8, 8, 8, 8)
+
+        card, layout = self._build_card()
+        self._tag_card_shadow = card.graphicsEffect()
+        outer.addWidget(card)
 
         self._tag_stack, self._tag_flow = build_flow_stack(
             AppStrings.EMPTY_TAGS_MSG,
@@ -112,6 +123,7 @@ class SettingsView(QFrame):
             scroll_name="SettingsScrollArea",
         )
         layout.addWidget(self._tag_stack, stretch=1)
+        layout.addWidget(self._card_separator())
 
         # Yeni etiket ekleme
         add_row = QHBoxLayout()
@@ -134,6 +146,31 @@ class SettingsView(QFrame):
 
         return w
 
+    @staticmethod
+    def _build_card() -> tuple[QFrame, QVBoxLayout]:
+        """Liste + ekle-formunu tek gorsel kartta birlestiren yukseltilmis QFrame kurar."""
+        card = QFrame()
+        card.setObjectName("SettingsListCard")
+        card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+
+        shadow = QGraphicsDropShadowEffect(card)
+        shadow.setBlurRadius(20)
+        shadow.setOffset(0, 3)
+        shadow.setColor(to_qcolor(resolve_theme_color(None, Colors.SHADOW)))
+        card.setGraphicsEffect(shadow)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
+        return card, layout
+
+    @staticmethod
+    def _card_separator() -> QFrame:
+        line = QFrame()
+        line.setObjectName("SettingsCardSeparator")
+        line.setFixedHeight(1)
+        return line
+
     # ------------------------------------------------------------------ #
     # Event Bus
     # ------------------------------------------------------------------ #
@@ -146,6 +183,7 @@ class SettingsView(QFrame):
         event_bus.tag_updated.connect(self._reload_tags)
         event_bus.tag_deleted.connect(self._reload_tags)
         event_bus.error_occurred.connect(self._banner.show_error)
+        event_bus.theme_changed.connect(self._on_theme_changed)
 
     # ------------------------------------------------------------------ #
     # Veri yukleme
@@ -154,6 +192,11 @@ class SettingsView(QFrame):
     def load_all(self) -> None:
         self._reload_categories()
         self._reload_tags()
+
+    def _on_theme_changed(self, theme_data: dict) -> None:
+        shadow_color = to_qcolor(resolve_theme_color(theme_data, Colors.SHADOW))
+        self._cat_card_shadow.setColor(shadow_color)
+        self._tag_card_shadow.setColor(shadow_color)
 
     def _reload_categories(self, _id: int = 0) -> None:
         self._reload_rows(
