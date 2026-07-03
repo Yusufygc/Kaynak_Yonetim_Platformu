@@ -4,6 +4,12 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-04] FIX | Kart içinde başlık/açıklama metni ortadan kesiliyordu
+
+`UrlRichCard`/`ResourceCard` başlık/açıklama etiketleri sabit piksel `setMaximumHeight` kullanıyordu; bu deger fontun satır yüksekliğinin tam katı olmadığından son görünür satır yarım glyph ile kesiliyordu (scrape edilen ham metindeki embedded `\n`'ler kesilme ihtimalini artırıyordu). Yeni `ui/text_utils.py::elide_to_lines()` metni en fazla N satıra düzgünce diziyor, taşarsa "…" ile bitiriyor, taşmıyorsa orijinal string'i aynen koruyor (mevcut testler bunu doğruladı). `setMaximumHeight` artık `lineSpacing()*max_lines` (tam satır, sıfır kesme payı). Ölçüm için `cards.qss` değerleriyle senkron tutulması gereken, sadece hesap amaçlı yerel `QFont` kullanılıyor (gerçek render QSS'ten gelmeye devam ediyor).
+
+---
+
 ## [2026-07-04] FIX | Kart çakışmasının GERÇEK kök nedeni: FlowLayout stale-layout (3. deneme, çözüldü)
 
 Önceki iki teşhis (deferred-delete, DropShadow ghost) yanlıştı. Gerçek neden `FlowLayout`'ta: (1) `addItem`/`takeAt` `invalidate()` çağırmıyordu, grid yenilenince layout dirty olmuyor, `setGeometry` tetiklenmiyordu; (2) `_do_layout`'taki `not isVisible()` kontrolü (Faz 4 arama filtresi) yeni eklenen henüz-render-edilmemiş kartları da atlıyordu → kart `(0,0)`'da stale kalıp ilk kartla tam üst üste biniyordu. Çözüm: `addItem`/`takeAt`'e `invalidate()`, `_do_layout`'ta `isVisible()` → `isHidden()`. Offscreen geometri testiyle kanıtlandı: fix öncesi son kart hep `(0,0)`, ilk kartla 311x371 kesişim; sonrası 0 çakışma (ekleme/rebuild/mod-geçişi hepsinde). "Tıklayınca düzeliyordu" çünkü panel açılışı merkezi resize edip `setGeometry`'yi tetikliyordu.

@@ -2,7 +2,7 @@ import ssl
 import urllib.request
 
 from PySide6.QtCore import QRunnable, QObject, Signal, Slot, QThreadPool, Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QPixmap
+from PySide6.QtGui import QDesktopServices, QFont, QFontMetrics, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 import qtawesome as qta
 
 from core.constants.colors import Colors
+from core.constants.fonts import Fonts
 from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
@@ -21,11 +22,36 @@ from core.logger import log
 from models import Resource
 from ui.components.card_icon_button import FavoriteButton, PinButton
 from ui.components.painted import AccentFrame, ColorBadge
+from ui.text_utils import elide_to_lines
 from ui.theme_utils import resolve_theme_color, valid_or_fallback, with_alpha
 
 _CARD_WIDTH = 320
 _CARD_HEIGHT = 380
 _THUMB_HEIGHT = 180
+
+# text_area setContentsMargins(14, 10, 14, 6) -> sol+sag 28px
+_TEXT_AREA_WIDTH = _CARD_WIDTH - 28
+_TITLE_MAX_LINES = 2
+_DESC_MAX_LINES = 3
+
+
+def _title_measure_font() -> QFont:
+    """Yalnizca satir kirpme HESABI icin; gercek render fontu cards.qss
+    (#UrlCardTitle) uzerinden gelir. QSS'teki piksel/weight degisirse burasi da
+    guncellenmeli. QApplication olusmadan QFont guvenilir olmadigi icin
+    modul importunda degil, ilk kullanimda (instance construction) cagrilir.
+    """
+    font = QFont(Fonts.FAMILY_PRIMARY)
+    font.setPixelSize(15)
+    font.setBold(True)
+    return font
+
+
+def _desc_measure_font() -> QFont:
+    """bkz. _title_measure_font — cards.qss #UrlCardDesc ile senkron tutulmali."""
+    font = QFont(Fonts.FAMILY_PRIMARY)
+    font.setPixelSize(12)
+    return font
 
 _THUMBNAIL_CACHE: dict[str, QPixmap] = {}
 
@@ -136,10 +162,13 @@ class UrlRichCard(AccentFrame):
             resource.extra_metadata.get("og_title", resource.title)
             if resource.extra_metadata else resource.title
         )
-        title_label = QLabel(meta_title)
+        title_font = _title_measure_font()
+        title_label = QLabel(
+            elide_to_lines(meta_title, title_font, _TEXT_AREA_WIDTH, _TITLE_MAX_LINES)
+        )
         title_label.setObjectName("UrlCardTitle")
         title_label.setWordWrap(True)
-        title_label.setMaximumHeight(70)
+        title_label.setMaximumHeight(QFontMetrics(title_font).lineSpacing() * _TITLE_MAX_LINES)
         text_area.addWidget(title_label)
 
         meta_desc: str = (
@@ -147,10 +176,13 @@ class UrlRichCard(AccentFrame):
             if resource.extra_metadata else ""
         ) or (resource.content or "")
         if meta_desc:
-            self._desc_label = QLabel(meta_desc)
+            desc_font = _desc_measure_font()
+            self._desc_label = QLabel(
+                elide_to_lines(meta_desc, desc_font, _TEXT_AREA_WIDTH, _DESC_MAX_LINES)
+            )
             self._desc_label.setObjectName("UrlCardDesc")
             self._desc_label.setWordWrap(True)
-            self._desc_label.setMaximumHeight(68)
+            self._desc_label.setMaximumHeight(QFontMetrics(desc_font).lineSpacing() * _DESC_MAX_LINES)
             text_area.addWidget(self._desc_label)
 
         layout.addLayout(text_area)

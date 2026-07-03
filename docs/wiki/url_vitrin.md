@@ -46,6 +46,16 @@ Sidebar'daki "Tüm Kaynaklar" nav öğesi (`_STATIC_ITEMS`'taki `"all"` anahtar�
 - Çıkarılan alanlar: `og_title`, `og_description`, `thumbnail`, `favicon`.
 - Request/parse hataları kaynak kaydını engellemez; boş metadata ile devam edilir. Tarama sırasında beklenmeyen bir istisna olursa `_ScrapeWorker` artık bunu yutmaz — `log.exception(...)` ile loglanır, worker çökmez.
 
+## Bilinen Hata Düzeltmesi: Kart İçinde Metin Ortadan Kesiliyordu
+
+Kart çakışması çözüldükten sonra ayrı bir sorun kaldı: `UrlRichCard`/`ResourceCard` başlık/açıklama etiketleri `setWordWrap(True)` + sabit piksel `setMaximumHeight(70/68/48/34)` kullanıyordu. `setMaximumHeight` piksel cinsinden sert bir clip'tir; bu sabitler fontun `lineSpacing()`'inin tam katı olmadığından son görünür satır **ortadan (yarım glyph)** kesiliyordu. Ayrıca scrape edilen `og_title`/`og_description` ham metni genelde birden fazla `\n` içeriyor, bu da toplam satır sayısını artırıp kesilme ihtimalini büyütüyordu.
+
+**Çözüm:** Yeni `ui/text_utils.py::elide_to_lines(text, font, width, max_lines)` — metni verilen genişlik/fonta göre en fazla `max_lines` satıra diziyor, taşan kısmı `QFontMetrics.elidedText()` ile son satırda "…" ile kesiyor; `text.split()` boşluk/satır-sonu ayrımı yapmadığı için embedded `\n`'leri de düzgün akan tek metne normalize ediyor. Metin taşmıyorsa (ve kaynakta zorlanmış `\n` yoksa) orijinal string aynen döner (string kimliği korunur, testler bunu doğruluyor). `title_label`/`desc_label` artık `elide_to_lines(...)` çıktısıyla oluşturuluyor, `setMaximumHeight` sabit sayı yerine `QFontMetrics(measure_font).lineSpacing() * max_lines` (tam satır, kesme payı sıfır).
+
+**Ölçüm fontu notu:** `QLabel.font()` widget gösterilip QSS uygulanana kadar güvenilir değildir (varsayılan uygulama fontunu döner). Bu yüzden her kartta `_title_measure_font()`/`_desc_measure_font()` — `cards.qss`'teki piksel/weight değerleriyle (UrlRichCard: 15px bold / 12px; ResourceCard: 14px bold / 11px) **birebir eşleşen**, sadece ölçüm amaçlı — bir `QFont` elle oluşturulur. Gerçek render fontu/rengi hâlâ QSS'ten gelir; `cards.qss` bu değerler değişirse senkron tutulmalı. Modül importunda değil, kart construction'ında (instance-level) oluşturulur — QApplication henüz yokken (test collection gibi) modül-seviyesi `QFont()` riskli olurdu.
+
+Satır sınırları: UrlRichCard title=2, desc=3 satır; ResourceCard title=2, desc=2 satır (kart boyutlarına göre ayarlandı).
+
 ## Bilinen Hata Düzeltmesi: Kart Eklerken Üst Üste Binme (GERÇEK kök neden — FlowLayout)
 
 Kartların üst üste binmesi/çakışması iki yanlış teşhisten (deferred-delete, DropShadow ghost) sonra gerçek kök nedene indirgendi. Belirtiler: yeni kaynak eklenince kartlar çakışıyor, **bir karta tıklayınca (detay panel açılıp merkez resize olunca) düzeliyor**, sonra tekrar bozuluyor; mod geçişinde ve sıralamada da bozuluyor.

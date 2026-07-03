@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -10,17 +11,39 @@ from PySide6.QtWidgets import (
 import qtawesome as qta
 
 from core.constants.colors import Colors
+from core.constants.fonts import Fonts
 from core.constants.icons import QtAwesomeIcons
 from core.constants.status import status_label
 from core.events import event_bus
 from models import Resource, ResourceStatus
 from ui.components.card_icon_button import FavoriteButton, PinButton
 from ui.components.painted import AccentFrame, ColorBadge
+from ui.text_utils import elide_to_lines
 from ui.theme_utils import resolve_theme_color, valid_or_fallback, with_alpha
 from utils.date_utils import format_date
 
 _CARD_WIDTH = 240
 _CARD_HEIGHT = 160
+
+# QVBoxLayout setContentsMargins(12, 10, 12, 10) -> sol+sag 24px
+_TEXT_AREA_WIDTH = _CARD_WIDTH - 24
+_TITLE_MAX_LINES = 2
+_DESC_MAX_LINES = 2
+
+
+def _title_measure_font() -> QFont:
+    """bkz. url_rich_card.py::_title_measure_font — cards.qss #CardTitle ile senkron."""
+    font = QFont(Fonts.FAMILY_PRIMARY)
+    font.setPixelSize(14)
+    font.setBold(True)
+    return font
+
+
+def _desc_measure_font() -> QFont:
+    """bkz. url_rich_card.py::_title_measure_font — cards.qss #CardDescription ile senkron."""
+    font = QFont(Fonts.FAMILY_PRIMARY)
+    font.setPixelSize(11)
+    return font
 
 _STATUS_COLOR_KEYS = {
     ResourceStatus.PLANNED: Colors.STATUS_PLANNED,
@@ -87,19 +110,25 @@ class ResourceCard(AccentFrame):
         top_row.addWidget(self._favorite_btn)
         layout.addLayout(top_row)
 
-        title = QLabel(resource.title)
+        title_font = _title_measure_font()
+        title = QLabel(elide_to_lines(resource.title, title_font, _TEXT_AREA_WIDTH, _TITLE_MAX_LINES))
         title.setObjectName("CardTitle")
         title.setWordWrap(True)
-        title.setMaximumHeight(48)
+        title.setMaximumHeight(QFontMetrics(title_font).lineSpacing() * _TITLE_MAX_LINES)
         title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addWidget(title)
 
         description = self._description_text(resource)
         if description:
-            self._description_label = QLabel(description)
+            desc_font = _desc_measure_font()
+            self._description_label = QLabel(
+                elide_to_lines(description, desc_font, _TEXT_AREA_WIDTH, _DESC_MAX_LINES)
+            )
             self._description_label.setObjectName("CardDescription")
             self._description_label.setWordWrap(True)
-            self._description_label.setMaximumHeight(34)
+            self._description_label.setMaximumHeight(
+                QFontMetrics(desc_font).lineSpacing() * _DESC_MAX_LINES
+            )
             self._description_label.setSizePolicy(
                 QSizePolicy.Policy.Expanding,
                 QSizePolicy.Policy.Fixed,
