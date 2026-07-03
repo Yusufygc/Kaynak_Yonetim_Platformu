@@ -8,7 +8,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.constants.colors import Colors
+from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
+from ui.components.icon_action_button import IconActionButton
 
 
 class TagRow(QFrame):
@@ -39,9 +42,9 @@ class TagRow(QFrame):
         self._name_edit.hide()
         layout.addWidget(self._name_edit)
 
-        self._edit_btn = QPushButton(AppStrings.EDIT)
-        self._edit_btn.setObjectName("RowEditButton")
-        self._edit_btn.setFixedWidth(70)
+        self._edit_btn = IconActionButton(
+            QtAwesomeIcons.EDIT, Colors.ACCENT, AppStrings.EDIT, "RowEditButton"
+        )
         layout.addWidget(self._edit_btn)
 
         self._save_btn = QPushButton(AppStrings.SAVE)
@@ -56,9 +59,9 @@ class TagRow(QFrame):
         self._cancel_edit_btn.hide()
         layout.addWidget(self._cancel_edit_btn)
 
-        self._delete_btn = QPushButton(AppStrings.DELETE)
-        self._delete_btn.setObjectName("RowDeleteButton")
-        self._delete_btn.setFixedWidth(80)
+        self._delete_btn = IconActionButton(
+            QtAwesomeIcons.DELETE, Colors.DANGER, AppStrings.DELETE, "RowDeleteButton"
+        )
         layout.addWidget(self._delete_btn)
 
         self._edit_btn.clicked.connect(self._enter_edit_mode)
@@ -75,7 +78,7 @@ class TagRow(QFrame):
         self._save_btn.show()
         self._cancel_edit_btn.show()
         self._delete_btn.hide()
-        self._confirm_pending = False
+        self._reset_delete_button()
         self.updateGeometry()
 
     def _exit_edit_mode(self) -> None:
@@ -97,11 +100,16 @@ class TagRow(QFrame):
 
     def _on_delete_click(self) -> None:
         if not self._confirm_pending:
-            self._delete_btn.setText(AppStrings.CONFIRM_DELETE)
-            self._delete_btn.setObjectName("RowDeleteConfirmButton")
-            self._delete_btn.style().unpolish(self._delete_btn)
-            self._delete_btn.style().polish(self._delete_btn)
+            self._delete_btn.set_state(
+                QtAwesomeIcons.DELETE, Colors.DANGER_HOVER,
+                AppStrings.CONFIRM_DELETE, "RowDeleteConfirmButton",
+            )
             self._confirm_pending = True
-            self.updateGeometry()
         else:
             self.delete_requested.emit(self._tag_id)
+
+    def _reset_delete_button(self) -> None:
+        self._delete_btn.set_state(
+            QtAwesomeIcons.DELETE, Colors.DANGER, AppStrings.DELETE, "RowDeleteButton"
+        )
+        self._confirm_pending = False

@@ -70,6 +70,8 @@ Alt kısımda iki `ToggleSwitch` satırı: **Tema Değiştir** ve **Sade Mod**. 
 
 Her `CategoryRow` / `TagRow`: inline düzenle + 2-tıklı sil. `QDialog/QMessageBox` kullanılmaz. Edit moduna geçişte (veya sil-onay metni değişince) satırın genişliği değiştiği için `self.updateGeometry()` çağrılır — bu, sarmalayan `FlowLayout`'a yeniden diziliş yapması gerektiğini bildirir (Qt bunu custom layout'larda otomatik yapmaz).
 
+Düzenle/Sil aksiyonları metin buton yerine `ui/components/icon_action_button.py::IconActionButton` (26x26, `QtAwesomeIcons.EDIT`/`DELETE`, tema-duyarli) kullanir — `card_icon_button.py::_CardIconButton` deseniyle tutarli ama toggle degil sabit-aksiyon butonu. `set_state(icon, color_role, tooltip, object_name)` ile sil-onay durumuna gecilir (ikon ayni kalir, renk `DANGER` → `DANGER_HOVER`, tooltip "Silmek için tekrar tıkla" olur, objectName QSS'in `#RowDeleteConfirmButton` kuralini tetikler). Edit moduna girildiginde sil-onay durumu otomatik sifirlanir (`_reset_delete_button()`) — önceden bu sifirlama sadece `_confirm_pending` bayragini guncelliyor, buton metnini guncellemiyordu (kucuk bir tutarlilik hatasi, bu turda giderildi).
+
 **Ortak yardımcı — `ui/components/flow_layout.py::build_flow_stack()`:** Boş-durum etiketi + kaydırılabilir `FlowLayout` izgarası içeren bir `QStackedWidget` kurar (`GRID_PAGE`/`EMPTY_PAGE` sabitleri). Hem `UrlShowcaseView` (rich/simple kart modları) hem `SettingsView` (kategori/etiket grid'i) bu fonksiyonu kullanır — önceden `UrlShowcaseView` içinde özel/private bir fonksiyondu, DRY için ortak bileşene taşındı (2026-07-04).
 
 ### UrlShowcaseView (`ui/views/url_showcase_view.py`) — tek içerik sayfası

@@ -4,6 +4,12 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-04] UI | Ayarlar sayfası: Düzenle/Sil ikon butona dönüştü (Faz 2)
+
+`CategoryRow`/`TagRow`'daki metin `Düzenle`/`Sil` butonları yeni ortak `ui/components/icon_action_button.py::IconActionButton` bileşeniyle kompakt ikon butonlara (kalem/çöp, `QtAwesomeIcons.EDIT/DELETE`) dönüştürüldü — chip'ler daha kompakt. 2-tıklı sil-onay davranışı korundu (`set_state()` ile ikon/renk/tooltip/objectName güncellenir). Yan etki: edit moduna girildiğinde bekleyen sil-onay durumunun artık görsel olarak da sıfırlandığı bir düzeltme yapıldı (önceden sadece dahili bayrak sıfırlanıyordu).
+
+---
+
 ## [2026-07-04] UI | Ayarlar sayfası: Kategori/Etiket listeleri chip/grid izgaraya dönüştürüldü (Faz 1)
 
 Ayarlar sayfasında dikey liste (`CategoryRow`/`TagRow`, tam genişlik) yerine `FlowLayout` tabanlı sarmalanan chip/grid izgara kullanılıyor — boş listeden sonra kalan devasa boş alan sorunu giderildi. `UrlShowcaseView` içindeki özel `_build_grid_stack()` fonksiyonu DRY için `ui/components/flow_layout.py::build_flow_stack()` olarak ortak bileşene taşındı; hem Vitrin hem Ayarlar aynı yardımcıyı kullanıyor. Kategori/etiket için boş-durum mesajları eklendi (`EMPTY_CATEGORIES_MSG`/`EMPTY_TAGS_MSG`). Satır bileşenlerinde edit-mod/sil-onay geçişlerinde `updateGeometry()` çağrısı eklendi (FlowLayout'un yeniden dizilmesi için gerekli). Bu, kullanıcıyla konuşulan çok fazlı Ayarlar sayfası tasarım iyileştirmesinin (ikon butonlar, ekle-formu entegrasyonu, arama kutusu sonraki fazlarda) ilk fazı.
