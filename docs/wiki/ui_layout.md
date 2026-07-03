@@ -65,9 +65,12 @@ Alt kısımda iki `ToggleSwitch` satırı: **Tema Değiştir** ve **Sade Mod**. 
 
 ### SettingsView (`ui/views/settings_view.py`)
 `QTabWidget`, iki sekme:
-- **Kategoriler:** Scroll liste (`CategoryRow`) + alt kısımda inline ekleme formu (ad/renk/ikon). Renk seçimi `ColorPickerButton` ile interaktif yapılır.
-- **Etiketler:** Scroll liste (`TagRow`) + inline ekleme formu (ad)
-Her `CategoryRow` / `TagRow`: inline düzenle + 2-tıklı sil. `QDialog/QMessageBox` kullanılmaz.
+- **Kategoriler:** Chip/grid izgara (`CategoryRow`, `FlowLayout` ile sarmalanır) + alt kısımda inline ekleme formu (ad/renk/ikon). Renk seçimi `ColorPickerButton` ile interaktif yapılır.
+- **Etiketler:** Chip/grid izgara (`TagRow`) + inline ekleme formu (ad)
+
+Her `CategoryRow` / `TagRow`: inline düzenle + 2-tıklı sil. `QDialog/QMessageBox` kullanılmaz. Edit moduna geçişte (veya sil-onay metni değişince) satırın genişliği değiştiği için `self.updateGeometry()` çağrılır — bu, sarmalayan `FlowLayout`'a yeniden diziliş yapması gerektiğini bildirir (Qt bunu custom layout'larda otomatik yapmaz).
+
+**Ortak yardımcı — `ui/components/flow_layout.py::build_flow_stack()`:** Boş-durum etiketi + kaydırılabilir `FlowLayout` izgarası içeren bir `QStackedWidget` kurar (`GRID_PAGE`/`EMPTY_PAGE` sabitleri). Hem `UrlShowcaseView` (rich/simple kart modları) hem `SettingsView` (kategori/etiket grid'i) bu fonksiyonu kullanır — önceden `UrlShowcaseView` içinde özel/private bir fonksiyondu, DRY için ortak bileşene taşındı (2026-07-04).
 
 ### UrlShowcaseView (`ui/views/url_showcase_view.py`) — tek içerik sayfası
 Detaylı açıklama: [[url_vitrin]]. Özet: **Üst Bar:** `SearchBar` + "Yeni Ekle" butonu — **FilterBar** (`ui/components/filter_bar.py`, "yükseltilmiş navbar kartı" tasarımı, bkz. altındaki not) — **InlineBanner** — içerik alanı `_mode_stack` (`QStackedWidget`, 2 mod): "rich" (varsayılan, `UrlRichCard` + url-only) / "simple" ("Sade Mod" açık, `ResourceCard` + tüm kaynaklar).
@@ -122,7 +125,7 @@ Kartlar `AccentFrame` tabanlıdır: sol accent şeridi painter ile çizilir, hov
 ---
 
 ## Boş Durum (Empty State)
-Sonuç yokken `UrlShowcaseView`'in ilgili moduna ait iç `QStackedWidget`'ı boş-durum sayfasına geçer (`_rich_stack`/`_simple_stack`, her biri kendi `EmptyStateLabel`'ına sahip).
+Sonuç yokken `UrlShowcaseView`'in ilgili moduna ait iç `QStackedWidget`'ı boş-durum sayfasına geçer (`_rich_stack`/`_simple_stack`, her biri kendi `EmptyStateLabel`'ına sahip). `SettingsView`'daki kategori/etiket grid'leri de aynı `build_flow_stack()` deseniyle kendi boş-durum sayfasına sahiptir (`AppStrings.EMPTY_CATEGORIES_MSG`/`EMPTY_TAGS_MSG`).
 
 ---
 

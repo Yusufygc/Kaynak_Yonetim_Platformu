@@ -49,12 +49,13 @@ class CategoryRow(QFrame):
 
         self._name_label = QLabel(category.name)
         self._name_label.setObjectName("CategoryRowLabel")
-        layout.addWidget(self._name_label, stretch=1)
+        layout.addWidget(self._name_label)
 
         self._name_edit = QLineEdit(category.name)
         self._name_edit.setObjectName("RowEditField")
+        self._name_edit.setFixedWidth(140)
         self._name_edit.hide()
-        layout.addWidget(self._name_edit, stretch=1)
+        layout.addWidget(self._name_edit)
 
         self._color_picker = ColorPickerButton(category.color_hex or "")
         self._color_picker.setFixedWidth(130)
@@ -97,6 +98,7 @@ class CategoryRow(QFrame):
         self._cancel_edit_btn.show()
         self._delete_btn.hide()
         self._confirm_pending = False
+        self.updateGeometry()
 
     def _exit_edit_mode(self) -> None:
         self._name_edit.hide()
@@ -106,6 +108,7 @@ class CategoryRow(QFrame):
         self._name_label.show()
         self._edit_btn.show()
         self._delete_btn.show()
+        self.updateGeometry()
 
     def _on_save(self) -> None:
         name = self._name_edit.text().strip()
@@ -125,6 +128,7 @@ class CategoryRow(QFrame):
             self._delete_btn.style().unpolish(self._delete_btn)
             self._delete_btn.style().polish(self._delete_btn)
             self._confirm_pending = True
+            self.updateGeometry()
         else:
             self.delete_requested.emit(self._cat_id)
 

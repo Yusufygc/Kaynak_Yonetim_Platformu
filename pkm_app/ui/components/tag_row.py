@@ -31,12 +31,13 @@ class TagRow(QFrame):
 
         self._name_label = QLabel(f"#{tag.name}")
         self._name_label.setObjectName("TagRowLabel")
-        layout.addWidget(self._name_label, stretch=1)
+        layout.addWidget(self._name_label)
 
         self._name_edit = QLineEdit(tag.name)
         self._name_edit.setObjectName("RowEditField")
+        self._name_edit.setFixedWidth(140)
         self._name_edit.hide()
-        layout.addWidget(self._name_edit, stretch=1)
+        layout.addWidget(self._name_edit)
 
         self._edit_btn = QPushButton(AppStrings.EDIT)
         self._edit_btn.setObjectName("RowEditButton")
@@ -75,6 +76,7 @@ class TagRow(QFrame):
         self._cancel_edit_btn.show()
         self._delete_btn.hide()
         self._confirm_pending = False
+        self.updateGeometry()
 
     def _exit_edit_mode(self) -> None:
         self._name_edit.hide()
@@ -83,6 +85,7 @@ class TagRow(QFrame):
         self._name_label.show()
         self._edit_btn.show()
         self._delete_btn.show()
+        self.updateGeometry()
 
     def _on_save(self) -> None:
         new_name = self._name_edit.text().strip()
@@ -99,5 +102,6 @@ class TagRow(QFrame):
             self._delete_btn.style().unpolish(self._delete_btn)
             self._delete_btn.style().polish(self._delete_btn)
             self._confirm_pending = True
+            self.updateGeometry()
         else:
             self.delete_requested.emit(self._tag_id)

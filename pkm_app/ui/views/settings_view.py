@@ -4,7 +4,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QScrollArea,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -14,6 +13,7 @@ from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.category_row import CategoryRow
 from ui.components.color_picker_button import ColorPickerButton
+from ui.components.flow_layout import build_flow_stack, EMPTY_PAGE, GRID_PAGE
 from ui.components.inline_banner import InlineBanner
 from ui.components.tag_row import TagRow
 
@@ -61,19 +61,12 @@ class SettingsView(QFrame):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
 
-        # Scroll alani
-        self._cat_scroll = QScrollArea()
-        self._cat_scroll.setWidgetResizable(True)
-        self._cat_scroll.setObjectName("SettingsScrollArea")
-
-        self._cat_list_container = QWidget()
-        self._cat_list_layout = QVBoxLayout(self._cat_list_container)
-        self._cat_list_layout.setContentsMargins(0, 0, 0, 0)
-        self._cat_list_layout.setSpacing(4)
-        self._cat_list_layout.addStretch()
-
-        self._cat_scroll.setWidget(self._cat_list_container)
-        layout.addWidget(self._cat_scroll, stretch=1)
+        self._cat_stack, self._cat_flow = build_flow_stack(
+            AppStrings.EMPTY_CATEGORIES_MSG,
+            h_spacing=8, v_spacing=8,
+            scroll_name="SettingsScrollArea",
+        )
+        layout.addWidget(self._cat_stack, stretch=1)
 
         # Yeni kategori ekleme formu
         add_row = QHBoxLayout()
@@ -113,18 +106,12 @@ class SettingsView(QFrame):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
 
-        self._tag_scroll = QScrollArea()
-        self._tag_scroll.setWidgetResizable(True)
-        self._tag_scroll.setObjectName("SettingsScrollArea")
-
-        self._tag_list_container = QWidget()
-        self._tag_list_layout = QVBoxLayout(self._tag_list_container)
-        self._tag_list_layout.setContentsMargins(0, 0, 0, 0)
-        self._tag_list_layout.setSpacing(4)
-        self._tag_list_layout.addStretch()
-
-        self._tag_scroll.setWidget(self._tag_list_container)
-        layout.addWidget(self._tag_scroll, stretch=1)
+        self._tag_stack, self._tag_flow = build_flow_stack(
+            AppStrings.EMPTY_TAGS_MSG,
+            h_spacing=8, v_spacing=8,
+            scroll_name="SettingsScrollArea",
+        )
+        layout.addWidget(self._tag_stack, stretch=1)
 
         # Yeni etiket ekleme
         add_row = QHBoxLayout()
@@ -170,7 +157,8 @@ class SettingsView(QFrame):
 
     def _reload_categories(self, _id: int = 0) -> None:
         self._reload_rows(
-            layout=self._cat_list_layout,
+            stack=self._cat_stack,
+            flow=self._cat_flow,
             rows=self._category_rows,
             items=self._controller.load_categories(),
             row_cls=CategoryRow,
@@ -180,7 +168,8 @@ class SettingsView(QFrame):
 
     def _reload_tags(self, _id: int = 0) -> None:
         self._reload_rows(
-            layout=self._tag_list_layout,
+            stack=self._tag_stack,
+            flow=self._tag_flow,
             rows=self._tag_rows,
             items=self._controller.load_tags(),
             row_cls=TagRow,
@@ -188,23 +177,26 @@ class SettingsView(QFrame):
             on_delete=self._on_delete_tag,
         )
 
-    def _reload_rows(self, *, layout: QVBoxLayout, rows: dict,
-                     items: list, row_cls, on_edit, on_delete) -> None:
-        self._clear_layout(layout)
-        rows.clear()
-        for item in items:
-            row = row_cls(item)
-            row.edit_requested.connect(on_edit)
-            row.delete_requested.connect(on_delete)
-            layout.insertWidget(layout.count() - 1, row)
-            rows[item.id] = row
-
     @staticmethod
-    def _clear_layout(layout: QVBoxLayout) -> None:
-        while layout.count() > 1:  # son eleman stretch
-            item = layout.takeAt(0)
+    def _reload_rows(*, stack, flow, rows: dict,
+                     items: list, row_cls, on_edit, on_delete) -> None:
+        while flow.count():
+            item = flow.takeAt(0)
             if item and item.widget():
                 item.widget().deleteLater()
+        rows.clear()
+
+        if not items:
+            stack.setCurrentIndex(EMPTY_PAGE)
+            return
+
+        stack.setCurrentIndex(GRID_PAGE)
+        for entry in items:
+            row = row_cls(entry)
+            row.edit_requested.connect(on_edit)
+            row.delete_requested.connect(on_delete)
+            flow.addWidget(row)
+            rows[entry.id] = row
 
     # ------------------------------------------------------------------ #
     # Slot'lar

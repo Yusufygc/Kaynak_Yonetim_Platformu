@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QRect, QSize, QPoint
-from PySide6.QtWidgets import QLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QLabel, QLayout, QScrollArea, QSizePolicy, QStackedWidget, QWidget
 
 
 class FlowLayout(QLayout):
@@ -96,3 +96,40 @@ class FlowLayout(QLayout):
             row_height = max(row_height, item_size.height())
 
         return y + row_height - rect.y() + margins.bottom()
+
+
+GRID_PAGE = 0
+EMPTY_PAGE = 1
+
+
+def build_flow_stack(
+    empty_message: str,
+    h_spacing: int = 12,
+    v_spacing: int = 12,
+    container_name: str = "",
+    scroll_name: str = "",
+) -> tuple[QStackedWidget, FlowLayout]:
+    """Bos-durum + kaydirilabilir FlowLayout izgarasi iceren bir QStackedWidget kurar."""
+    stack = QStackedWidget()
+
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    if scroll_name:
+        scroll.setObjectName(scroll_name)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+    container = QWidget()
+    if container_name:
+        container.setObjectName(container_name)
+    flow = FlowLayout(container, h_spacing=h_spacing, v_spacing=v_spacing)
+    container.setLayout(flow)
+    scroll.setWidget(container)
+    stack.addWidget(scroll)  # GRID_PAGE
+
+    empty_label = QLabel(empty_message)
+    empty_label.setObjectName("EmptyStateLabel")
+    empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    empty_label.setWordWrap(True)
+    stack.addWidget(empty_label)  # EMPTY_PAGE
+
+    return stack, flow

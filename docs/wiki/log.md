@@ -4,6 +4,14 @@ En yeni girdi her zaman en üstte olmalıdır.
 
 ---
 
+## [2026-07-04] UI | Ayarlar sayfası: Kategori/Etiket listeleri chip/grid izgaraya dönüştürüldü (Faz 1)
+
+Ayarlar sayfasında dikey liste (`CategoryRow`/`TagRow`, tam genişlik) yerine `FlowLayout` tabanlı sarmalanan chip/grid izgara kullanılıyor — boş listeden sonra kalan devasa boş alan sorunu giderildi. `UrlShowcaseView` içindeki özel `_build_grid_stack()` fonksiyonu DRY için `ui/components/flow_layout.py::build_flow_stack()` olarak ortak bileşene taşındı; hem Vitrin hem Ayarlar aynı yardımcıyı kullanıyor. Kategori/etiket için boş-durum mesajları eklendi (`EMPTY_CATEGORIES_MSG`/`EMPTY_TAGS_MSG`). Satır bileşenlerinde edit-mod/sil-onay geçişlerinde `updateGeometry()` çağrısı eklendi (FlowLayout'un yeniden dizilmesi için gerekli). Bu, kullanıcıyla konuşulan çok fazlı Ayarlar sayfası tasarım iyileştirmesinin (ikon butonlar, ekle-formu entegrasyonu, arama kutusu sonraki fazlarda) ilk fazı.
+
+**Ek not:** Bu değişiklikten önce `KaynakYonetim` conda ortamının bozuk/boş olduğu tespit edildi (python.exe/Lib/Scripts yok, `conda-meta` tek kayıt) — `conda create -n KaynakYonetim python=3.11` + `pip install -r requirements.lock pytest` ile yeniden kuruldu.
+
+---
+
 ## [2026-07-03] DÜZELTME | "Sade Mod" yanlış anlaşılmıştı — "Tüm Kaynaklar" sayfası kaldırıldı
 
 Önceki turda "Sade Mod" toggle'ı, `ResourceCard`'dan görsel detay (durum rozeti/açıklama/tarih/etiket) gizleyen bir toggle olarak yanlış uygulanmıştı. Gerçek istek farklıydı: ayrı bir "Tüm Kaynaklar" sayfası tamamen kaldırılacak, "Bağlantı Vitrini" tek içerik sayfası olarak kalacak, "Sade Mod" bu tek sayfanın içeriğini değiştirecekti (kapalı: orijinal Vitrin — url-only `UrlRichCard`; açık: eski Tüm Kaynaklar görünümü — tüm kaynaklar, düz `ResourceCard`). Ayrıca Vitrin'e kalıcı bir arama çubuğu eklendi.

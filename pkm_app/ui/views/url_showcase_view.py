@@ -1,10 +1,8 @@
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
-    QLabel,
     QPushButton,
-    QScrollArea,
     QVBoxLayout,
     QWidget,
     QStackedWidget,
@@ -17,41 +15,13 @@ from core.constants.icons import QtAwesomeIcons
 from core.constants.strings import AppStrings
 from core.events import event_bus
 from ui.components.filter_bar import FilterBar
-from ui.components.flow_layout import FlowLayout
+from ui.components.flow_layout import build_flow_stack, EMPTY_PAGE, GRID_PAGE
 from ui.components.inline_banner import InlineBanner
 from ui.components.search_bar import SearchBar
 from ui.theme_utils import resolve_theme_color
 
-_EMPTY_PAGE = 1
-_GRID_PAGE = 0
-
 _RICH_MODE = 0
 _SIMPLE_MODE = 1
-
-
-def _build_grid_stack(h_spacing: int, v_spacing: int, container_name: str, scroll_name: str) -> tuple[QStackedWidget, FlowLayout]:
-    """Bos-durum + kaydirilabilir FlowLayout izgarasi iceren bir QStackedWidget kurar."""
-    stack = QStackedWidget()
-
-    scroll = QScrollArea()
-    scroll.setWidgetResizable(True)
-    scroll.setObjectName(scroll_name)
-    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-    container = QWidget()
-    container.setObjectName(container_name)
-    flow = FlowLayout(container, h_spacing=h_spacing, v_spacing=v_spacing)
-    container.setLayout(flow)
-    scroll.setWidget(container)
-    stack.addWidget(scroll)  # _GRID_PAGE
-
-    empty_label = QLabel(AppStrings.EMPTY_STATE_MSG)
-    empty_label.setObjectName("EmptyStateLabel")
-    empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    empty_label.setWordWrap(True)
-    stack.addWidget(empty_label)  # _EMPTY_PAGE
-
-    return stack, flow
 
 
 class UrlShowcaseView(QFrame):
@@ -106,13 +76,15 @@ class UrlShowcaseView(QFrame):
 
         self._mode_stack = QStackedWidget()
 
-        self._rich_stack, self._rich_flow = _build_grid_stack(
+        self._rich_stack, self._rich_flow = build_flow_stack(
+            AppStrings.EMPTY_STATE_MSG,
             h_spacing=16, v_spacing=16,
             container_name="ShowcaseContainer", scroll_name="ShowcaseScrollArea",
         )
         self._mode_stack.addWidget(self._rich_stack)  # _RICH_MODE
 
-        self._simple_stack, self._simple_flow = _build_grid_stack(
+        self._simple_stack, self._simple_flow = build_flow_stack(
+            AppStrings.EMPTY_STATE_MSG,
             h_spacing=12, v_spacing=12,
             container_name="CardContainer", scroll_name="CardScrollArea",
         )
@@ -156,10 +128,10 @@ class UrlShowcaseView(QFrame):
 
         url_resources = [r for r in resources if r.url]
         if not url_resources:
-            self._rich_stack.setCurrentIndex(_EMPTY_PAGE)
+            self._rich_stack.setCurrentIndex(EMPTY_PAGE)
             return
 
-        self._rich_stack.setCurrentIndex(_GRID_PAGE)
+        self._rich_stack.setCurrentIndex(GRID_PAGE)
         for resource in url_resources:
             card = UrlRichCard(resource)
             self._rich_cards.append(card)
@@ -175,10 +147,10 @@ class UrlShowcaseView(QFrame):
                 item.widget().deleteLater()
 
         if not resources:
-            self._simple_stack.setCurrentIndex(_EMPTY_PAGE)
+            self._simple_stack.setCurrentIndex(EMPTY_PAGE)
             return
 
-        self._simple_stack.setCurrentIndex(_GRID_PAGE)
+        self._simple_stack.setCurrentIndex(GRID_PAGE)
         for resource in resources:
             card = ResourceCard(resource)
             self._simple_cards.append(card)

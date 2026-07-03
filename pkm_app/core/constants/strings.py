@@ -26,6 +26,8 @@ class AppStrings:
     EDIT = "Düzenle"
     DELETE = "Sil"
     CONFIRM_DELETE = "Silmek için tekrar tıkla"
+    EMPTY_CATEGORIES_MSG = "Henüz kategori eklenmedi. Aşağıdan yeni bir kategori oluşturabilirsiniz."
+    EMPTY_TAGS_MSG = "Henüz etiket eklenmedi. Aşağıdan yeni bir etiket oluşturabilirsiniz."
 
     # Detail panel
     OPEN_IN_BROWSER = "Tarayıcıda Aç"
